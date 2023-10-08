@@ -214,7 +214,7 @@ describe("module parser", () => {
         uint64: uint64;
         float32: float32;
         float64: float64;
-        tsmillis: tsmillis;
+        timestamp: timestamp;
         string: string;
         bytes: bytes;
         strings: [string?];
@@ -262,10 +262,10 @@ describe("module parser", () => {
                   primitive: "float64",
                 },
               },
-              tsmillis: {
+              timestamp: {
                 unresolvedType: {
                   kind: "primitive",
-                  primitive: "tsmillis",
+                  primitive: "timestamp",
                 },
               },
               string: {
@@ -300,11 +300,11 @@ describe("module parser", () => {
                     nameParts: [
                       {
                         text: "Foo",
-                        position: 282,
+                        position: 284,
                         line: {
                           lineNumber: 12,
                           line: "        foos: [Foo|x.y];",
-                          position: 267,
+                          position: 269,
                           modulePath: "path/to/module",
                         },
                         colNumber: 15,
@@ -315,11 +315,11 @@ describe("module parser", () => {
                   key: {
                     pipeToken: {
                       text: "|",
-                      position: 285,
+                      position: 287,
                       line: {
                         lineNumber: 12,
                         line: "        foos: [Foo|x.y];",
-                        position: 267,
+                        position: 269,
                         modulePath: "path/to/module",
                       },
                       colNumber: 18,
@@ -327,22 +327,22 @@ describe("module parser", () => {
                     fieldNames: [
                       {
                         text: "x",
-                        position: 286,
+                        position: 288,
                         line: {
                           lineNumber: 12,
                           line: "        foos: [Foo|x.y];",
-                          position: 267,
+                          position: 269,
                           modulePath: "path/to/module",
                         },
                         colNumber: 19,
                       },
                       {
                         text: "y",
-                        position: 288,
+                        position: 290,
                         line: {
                           lineNumber: 12,
                           line: "        foos: [Foo|x.y];",
-                          position: 267,
+                          position: 269,
                           modulePath: "path/to/module",
                         },
                         colNumber: 21,

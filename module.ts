@@ -100,7 +100,7 @@ export type Primitive =
   | "uint64"
   | "float32"
   | "float64"
-  | "tsmillis"
+  | "timestamp"
   | "string"
   | "bytes";
 

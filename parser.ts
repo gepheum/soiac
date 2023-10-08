@@ -343,7 +343,7 @@ const PRIMITIVE_TYPES: ReadonlySet<string> = new Set<Primitive>([
   "uint64",
   "float32",
   "float64",
-  "tsmillis",
+  "timestamp",
   "string",
   "bytes",
 ]);
