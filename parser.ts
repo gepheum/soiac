@@ -399,12 +399,12 @@ function parseArrayType(it: TokenIterator): UnresolvedArrayType | undefined {
   while (true) {
     const keyAllowed = !key && item.kind === "record";
     const match = it.expectThenMove([
-      /*0:*/ keyAllowed ? "@" : null,
+      /*0:*/ keyAllowed ? "|" : null,
       /*1:*/ "]",
     ]);
     switch (match.case) {
       case 0: {
-        // '@'
+        // '|'
         key = parseFieldPath(it, match.token);
         if (key === null) {
           return undefined;
@@ -421,7 +421,7 @@ function parseArrayType(it: TokenIterator): UnresolvedArrayType | undefined {
 
 function parseFieldPath(
   it: TokenIterator,
-  atToken: Token,
+  pipeToken: Token,
 ): FieldPath | undefined {
   const fieldNames: Token[] = [];
   while (true) {
@@ -437,7 +437,7 @@ function parseFieldPath(
     }
   }
   return {
-    atToken: atToken,
+    pipeToken: pipeToken,
     fieldNames: fieldNames,
     // Just because we need to provide a value.
     // The correct value will be populated at a later stage.

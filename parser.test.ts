@@ -218,7 +218,7 @@ describe("module parser", () => {
         string: string;
         bytes: bytes;
         strings: [string?];
-        foos: [Foo@x.y];
+        foos: [Foo|x.y];
       }`);
 
     expect(actualModule).toMatch({
@@ -303,7 +303,7 @@ describe("module parser", () => {
                         position: 282,
                         line: {
                           lineNumber: 12,
-                          line: "        foos: [Foo@x.y];",
+                          line: "        foos: [Foo|x.y];",
                           position: 267,
                           modulePath: "path/to/module",
                         },
@@ -313,12 +313,12 @@ describe("module parser", () => {
                     absolute: false,
                   },
                   key: {
-                    atToken: {
-                      text: "@",
+                    pipeToken: {
+                      text: "|",
                       position: 285,
                       line: {
                         lineNumber: 12,
-                        line: "        foos: [Foo@x.y];",
+                        line: "        foos: [Foo|x.y];",
                         position: 267,
                         modulePath: "path/to/module",
                       },
@@ -330,7 +330,7 @@ describe("module parser", () => {
                         position: 286,
                         line: {
                           lineNumber: 12,
-                          line: "        foos: [Foo@x.y];",
+                          line: "        foos: [Foo|x.y];",
                           position: 267,
                           modulePath: "path/to/module",
                         },
@@ -341,7 +341,7 @@ describe("module parser", () => {
                         position: 288,
                         line: {
                           lineNumber: 12,
-                          line: "        foos: [Foo@x.y];",
+                          line: "        foos: [Foo|x.y];",
                           position: 267,
                           modulePath: "path/to/module",
                         },

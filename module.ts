@@ -146,8 +146,8 @@ export interface ResolvedRecordRef {
 
 /** A field or a sequence of field for keying items in an array. */
 export interface MutableFieldPath {
-  /** The "@" token. */
-  readonly atToken: Token;
+  /** The "|" token. */
+  readonly pipeToken: Token;
   /** A non-empty sequence of field names. */
   readonly fieldNames: readonly Token[];
   keyType: PrimitiveType | ResolvedRecordRef;

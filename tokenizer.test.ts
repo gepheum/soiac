@@ -174,7 +174,7 @@ describe("tokenizer", () => {
     const code = [
       "struct Foos {",
       "  foos: [foo.Foo]?;",
-      "  bars: [Bar@key];",
+      "  bars: [Bar|key];",
       "}",
     ].join("\n");
 
@@ -246,7 +246,7 @@ describe("tokenizer", () => {
                       text: "Bar",
                     },
                     {
-                      text: "@",
+                      text: "|",
                     },
                     {
                       text: "key",

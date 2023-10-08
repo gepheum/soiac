@@ -345,9 +345,9 @@ describe("module set", () => {
           }
 
           struct Foo {
-            users: [Outer.User@key];
-            users_by_enum: [Outer.User@key_enum];
-            user_histories: [Outer.UserHistory@user.key];
+            users: [Outer.User|key];
+            users_by_enum: [Outer.User|key_enum];
+            user_histories: [Outer.UserHistory|user.key];
           }
         `,
       );
@@ -369,7 +369,7 @@ describe("module set", () => {
                       key: "path/to/module:45",
                     },
                     key: {
-                      atToken: { text: "@" },
+                      pipeToken: { text: "|" },
                       fieldNames: [
                         { text: "key" },
                       ],
@@ -389,7 +389,7 @@ describe("module set", () => {
                       key: "path/to/module:45",
                     },
                     key: {
-                      atToken: { text: "@" },
+                      pipeToken: { text: "|" },
                       fieldNames: [
                         { text: "key_enum" },
                       ],
@@ -409,7 +409,7 @@ describe("module set", () => {
                       key: "path/to/module:204",
                     },
                     key: {
-                      atToken: { text: "@" },
+                      pipeToken: { text: "|" },
                       fieldNames: [
                         { text: "user" },
                         { text: "key" },
@@ -435,7 +435,7 @@ describe("module set", () => {
         `
           struct User {}
           struct Foo {
-            users: [User@key];
+            users: [User|key];
           }
         `,
       );
@@ -462,7 +462,7 @@ describe("module set", () => {
         `
           enum Enum { MONDAY; }
           struct Foo {
-            users: [Enum@key];
+            users: [Enum|key];
           }
         `,
       );
@@ -474,7 +474,7 @@ describe("module set", () => {
         errors: [
           {
             token: {
-              text: "@",
+              text: "|",
             },
             message: "Item must have struct type",
           },
@@ -489,7 +489,7 @@ describe("module set", () => {
         `
           struct User { key: string; }
           struct Foo {
-            users: [User@key.bar];
+            users: [User|key.bar];
           }
         `,
       );
@@ -517,7 +517,7 @@ describe("module set", () => {
           struct Bar {}
           struct User { key: Bar; }
           struct Foo {
-            users: [User@key];
+            users: [User|key];
           }
         `,
       );

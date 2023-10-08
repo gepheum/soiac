@@ -33,15 +33,15 @@ function tokenize(
   // Comment:                  \/\*([^*]|\*[^/])*\*\/|\/\/[^\n\r]*
   // Word:                     \w+
   // Whitespaces:              [ \n\r\t]+
-  // Symbol:                   [{}\[\]\(\)*.:=;@?\-,]
+  // Symbol:                   [{}\[\]\(\)*.:=;|?\-,]
   // String literal:           "[^"\n\r]*"|'[^'\n\r]*'
   // Unclosed comment:         \/\*([^*]|\*[^/]|\*$)*$
   // Unclosed string literal:  "[^"\n\r]*(\n|\r|$)|'[^"\n\r]*(\n|\r|$)
-  // Invalid char sequence:    [^\w \n\r\t{}\[\]\(\)*.:=;@?\-,"']+
+  // Invalid char sequence:    [^\w \n\r\t{}\[\]\(\)*.:=;|?\-,"']+
   //
   // To iterate on this regex, use https://regex101.com/.
   const re =
-    /(\/\*([^*]|\*[^/])*\*\/|\/\/[^\n\r]*)|(\w+)|([ \n\r\t]+)|[{}\[\]\(\)*.:=;@?\-,]|("[^"\n\r]*"|'[^'\n\r]*')|(\/\*([^*]|\*[^/]|\*$)*$)|("[^"\n\r]*(\n|\r|$)|'[^"\n\r]*(\n|\r|$))|([^\w \n\r\t{}\[\]\(\)*.:=;@?\-,"']+)/g;
+    /(\/\*([^*]|\*[^/])*\*\/|\/\/[^\n\r]*)|(\w+)|([ \n\r\t]+)|[{}\[\]\(\)*.:=;|?\-,]|("[^"\n\r]*"|'[^'\n\r]*')|(\/\*([^*]|\*[^/]|\*$)*$)|("[^"\n\r]*(\n|\r|$)|'[^"\n\r]*(\n|\r|$))|([^\w \n\r\t{}\[\]\(\)*.:=;|?\-,"']+)/g;
 
   let group: RegExpExecArray | null;
   while ((group = re.exec(code)) !== null) {

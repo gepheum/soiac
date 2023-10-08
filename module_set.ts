@@ -342,7 +342,7 @@ export class ModuleSet {
       const { fieldNames } = key;
       if (item.kind !== "record" || item.recordType !== "struct") {
         errors.push({
-          token: key.atToken,
+          token: key.pipeToken,
           message: "Item must have struct type",
         });
         return;
