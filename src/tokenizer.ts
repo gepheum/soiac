@@ -1,3 +1,4 @@
+import { unquoteAndUnescape } from "./literals.ts";
 import { CodeLine, Error, ErrorSink, Result, Token } from "./module.ts";
 
 /** Tokenizes the given module. */
@@ -77,6 +78,19 @@ export function tokenizeModule(
         errors.push({
           token: token,
           message: "String literal contains invalid escape sequence",
+        });
+        continue;
+      }
+      // Check that the string doesn't contain lone surrogates.
+      // Seems like we can't use isWellFormed in Deno:
+      //   https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/isWellFormed
+      const unquoted = unquoteAndUnescape(stringLiteral);
+      try {
+        encodeURIComponent(unquoted);
+      } catch {
+        errors.push({
+          token: token,
+          message: "String literal contains lone surrogates",
         });
         continue;
       }
