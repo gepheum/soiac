@@ -1,0 +1,7 @@
+import User from "../user.soia";
+
+struct Car {
+  model: string;
+  purchase_time: timestamp;
+  owner: User;
+}

@@ -11,7 +11,7 @@ function parse(contents: string): Result<Module> {
 }
 
 describe("module parser", () => {
-  it("parses module with simple struct", () => {
+  it("simple struct", () => {
     const actualModule = parse(`
       struct Point {
         x: float32;
@@ -79,7 +79,7 @@ describe("module parser", () => {
     });
   });
 
-  it("parses struct with explicit numbering", () => {
+  it("struct with explicit numbering", () => {
     const actualModule = parse(`
       struct Point {
         x: float32 = 1;
@@ -106,7 +106,7 @@ describe("module parser", () => {
     });
   });
 
-  it("parse simple enum", () => {
+  it("simple enum", () => {
     const actualModule = parse(`
       enum Enum {
         CONSTANT;
@@ -163,7 +163,7 @@ describe("module parser", () => {
     });
   });
 
-  it("parses nested struct", () => {
+  it("nested struct", () => {
     const actualModule = parse(`
     struct Foo {
       struct Bar {}
@@ -205,7 +205,7 @@ describe("module parser", () => {
     });
   });
 
-  it("parses struct with all possible types", () => {
+  it("struct with all possible types", () => {
     const actualModule = parse(`
       struct AllTypes {
         bool: bool;
@@ -363,7 +363,7 @@ describe("module parser", () => {
     });
   });
 
-  it("parses module with imports", () => {
+  it("module with imports", () => {
     const actualModule = parse(`
     import foo from './path/😊/foo';
     import * as bar from "path/to/bar";`);
@@ -395,7 +395,7 @@ describe("module parser", () => {
     });
   });
 
-  it("parses module with duplicate identifier", () => {
+  it("module with duplicate identifier", () => {
     const actualModule = parse(`
       struct A {}
       struct A {}`);
@@ -413,7 +413,7 @@ describe("module parser", () => {
     });
   });
 
-  it("parses struct with duplicate identifier", () => {
+  it("struct with duplicate identifier", () => {
     const actualModule = parse(`
       struct A {
         a: bool;
@@ -433,12 +433,33 @@ describe("module parser", () => {
     });
   });
 
-  it("parses struct with mixed numbering", () => {
+  it("struct with invalid casing", () => {
     const actualModule = parse(`
-    struct A {
-      a: bool;
-      b: bool = 1;
-    }`);
+      struct a {
+        A: bool;
+      }`);
+
+    expect(actualModule).toMatch({
+      errors: [{
+        token: {
+          text: "a",
+        },
+        expected: "UpperCamel",
+      }, {
+        token: {
+          text: "A",
+        },
+        expected: "lower_underscore",
+      }],
+    });
+  });
+
+  it("struct with mixed numbering", () => {
+    const actualModule = parse(`
+      struct A {
+        a: bool;
+        b: bool = 1;
+      }`);
 
     expect(actualModule).toMatch({
       errors: [{
@@ -450,7 +471,7 @@ describe("module parser", () => {
     });
   });
 
-  it("parses struct with removed fields and mixed numbering", () => {
+  it("struct with removed fields and mixed numbering", () => {
     const actualModule = parse(`
       struct A {
         removed;
@@ -467,7 +488,7 @@ describe("module parser", () => {
     });
   });
 
-  it("parses struct with duplicate number", () => {
+  it("struct with duplicate number", () => {
     const actualModule = parse(`
       struct A {
         a: bool = 0;
@@ -484,7 +505,7 @@ describe("module parser", () => {
     });
   });
 
-  it("parse struct with duplicate number in removed declaration", () => {
+  it("struct with duplicate number in removed declaration", () => {
     const actualModule = parse(`
       struct A {
         removed 0-2, 5, 2-4;
@@ -500,7 +521,7 @@ describe("module parser", () => {
     });
   });
 
-  it("parses struct with removed fields and duplicate number", () => {
+  it("struct with removed fields and duplicate number", () => {
     const actualModule = parse(`
       struct A {
         a: bool = 0;
@@ -517,7 +538,7 @@ describe("module parser", () => {
     });
   });
 
-  it("parse struct with missing number", () => {
+  it("struct with missing number", () => {
     const actualModule = parse(`
       struct A {
         a: bool = 2;
@@ -534,7 +555,38 @@ describe("module parser", () => {
     });
   });
 
-  it("parses enum with missing number", () => {
+  it("enum with invalid casing", () => {
+    const actualModule = parse(`
+      enum a {
+        foo = 0;
+        BAR: string = 1;
+      }`);
+
+    expect(actualModule).toMatch({
+      errors: [
+        {
+          token: {
+            text: "a",
+          },
+          expected: "UpperCamel",
+        },
+        {
+          token: {
+            text: "foo",
+          },
+          expected: "UPPER_UNDERSCORE",
+        },
+        {
+          token: {
+            text: "BAR",
+          },
+          expected: "lower_underscore",
+        },
+      ],
+    });
+  });
+
+  it("enum with missing number", () => {
     const actualModule = parse(`
       enum A {
         A = 2;
@@ -551,7 +603,7 @@ describe("module parser", () => {
     });
   });
 
-  it("parses struct with removed fields", () => {
+  it("struct with removed fields", () => {
     const actualModule = parse(`
       struct Point {
         removed;
@@ -575,7 +627,7 @@ describe("module parser", () => {
     });
   });
 
-  it("parses struct with removed fields and explicit numbering", () => {
+  it("struct with removed fields and explicit numbering", () => {
     const actualModule = parse(`
       struct Point {
         removed 3, 4-6;
@@ -598,7 +650,7 @@ describe("module parser", () => {
     });
   });
 
-  it("parses empty struct", () => {
+  it("empty struct", () => {
     const actualModule = parse(`
     struct Point {}`);
 
@@ -621,7 +673,7 @@ describe("module parser", () => {
     });
   });
 
-  it("parses empty enum", () => {
+  it("empty enum", () => {
     const actualModule = parse(`
     enum Enum {
       removed;
@@ -639,7 +691,7 @@ describe("module parser", () => {
     });
   });
 
-  it("parses removed declaration with invalid range", () => {
+  it("removed declaration with invalid range", () => {
     const actualModule = parse(`
     struct Foo {
       removed 3-2;
@@ -657,7 +709,7 @@ describe("module parser", () => {
     });
   });
 
-  it("parses procedure", () => {
+  it("procedure", () => {
     const actualModule = parse(`
       procedure Search(req):resp;`);
 
@@ -700,9 +752,9 @@ describe("module parser", () => {
     });
   });
 
-  it("parse procedure with explicit number", () => {
+  it("procedure with explicit number", () => {
     const actualModule = parse(`
-    procedure Search(req):resp = 200;`);
+      procedure Search(req):resp = 200;`);
 
     expect(actualModule).toMatch({
       result: {
@@ -735,6 +787,108 @@ describe("module parser", () => {
             text: "Search",
           },
           number: 200,
+        }],
+      },
+      errors: [],
+    });
+  });
+
+  it("string constant", () => {
+    const actualModule = parse(`
+      const FOO: string = "Foo";`);
+
+    expect(actualModule).toMatch({
+      result: {
+        kind: "module",
+        path: "path/to/module",
+        nameToDeclaration: {
+          FOO: {
+            kind: "constant",
+            name: {
+              text: "FOO",
+            },
+            unresolvedType: {
+              kind: "primitive",
+              primitive: "string",
+            },
+            value: {
+              kind: "literal",
+              token: {
+                text: '"Foo"',
+              },
+              value: "Foo",
+            },
+          },
+        },
+        constants: [{
+          kind: "constant",
+          name: {
+            text: "FOO",
+          },
+        }],
+      },
+      errors: [],
+    });
+  });
+
+  it("constant with invalid casing", () => {
+    const actualModule = parse(`
+      const foo: string = "Foo";`);
+
+    expect(actualModule).toMatch({
+      errors: [
+        {
+          token: {
+            text: "foo",
+          },
+          expected: "UPPER_UNDERSCORE",
+        },
+      ],
+    });
+  });
+
+  it("complex constant", () => {
+    const actualModule = parse(`
+      const FOO: [Foo] = {
+        foo: true,
+        x: [
+          {foo: true},
+          {bar: false,},
+          "hey",
+          3.14,
+        ],
+        empty_array: [],
+        empty_object: {},
+      };`);
+
+    expect(actualModule).toMatch({
+      result: {
+        kind: "module",
+        path: "path/to/module",
+        nameToDeclaration: {
+          FOO: {
+            kind: "constant",
+            name: {
+              text: "FOO",
+            },
+            unresolvedType: {
+              kind: "primitive",
+              primitive: "string",
+            },
+            value: {
+              kind: "literal",
+              token: {
+                text: '"Foo"',
+              },
+              value: "Foo",
+            },
+          },
+        },
+        constants: [{
+          kind: "constant",
+          name: {
+            text: "FOO",
+          },
         }],
       },
       errors: [],

@@ -1,0 +1,6 @@
+import JsonValue from "./enums.soia";
+import Point from "./structs.soia";
+
+procedure MyProcedure(Point): JsonValue;
+
+procedure WithExplicitNumber([Point]): JsonValue? = 3;

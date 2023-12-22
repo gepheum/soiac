@@ -24,49 +24,6 @@ export interface Token {
   readonly colNumber: number;
 }
 
-/**
- * A sequence of tokens which either ends with a semicolon and does not contain
- * any curly bracket, or ends when the first left curly bracket is closed. In
- * the latter case, the other sentence nodes found between the curly brackets
- * are children of this node.
- *
- * Example:
- * ```
- *   struct Foobar {
- *     foo: Foo;
- *     bar: Bar;
- *   }
- * ```
- *
- * The sentence node is:
- * ```
- *   {
- *     tokens: ["struct", "Foobar", "{"],
- *     children: [
- *       {
- *         tokens: ["foo", ":", "Foo", ";"],
- *         children: [],
- *       },
- *       {
- *         tokens: ["bar", ":", "Bar", ";"],
- *         children: [],
- *       },
- *     ],
- *   }
- * ```
- *
- * We also create a special sentence node for the root of a module. Its chidren
- * are all the top-level sentence nodes.
- */
-export interface SentenceNode {
-  /**
-   * The last token is guaranteed to be one of [';', '{', '}', EOF].
-   * When it ends with '}', an error will be registered in the parser.
-   */
-  readonly tokens: readonly Token[];
-  readonly children: readonly SentenceNode[];
-}
-
 // -----------------------------------------------------------------------------
 // ERROR HANDLING
 // -----------------------------------------------------------------------------
@@ -286,13 +243,61 @@ export interface MutableProcedure<Mutable extends boolean = true> {
 
 export type Procedure<Mutable extends boolean = boolean> = //
   Mutable extends true ? MutableProcedure
-    : Readonly<MutableProcedure>;
+    : Readonly<MutableProcedure<false>>;
+
+// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+// TODO: comment
+export interface MutableConstant<Mutable extends boolean = true> {
+  readonly kind: "constant";
+  readonly name: Token;
+  readonly unresolvedType: UnresolvedType;
+  type: ResolvedType<Mutable> | undefined;
+  readonly value: Value;
+}
+
+export type Constant<Mutable extends boolean = boolean> = //
+  Mutable extends true //
+    ? MutableConstant
+    : Readonly<MutableConstant<false>>;
+
+// TODO: comment
+export interface ObjectValue {
+  readonly kind: "object";
+  readonly token: Token;
+  readonly entries: Readonly<{ [f: string]: Value }>;
+}
+
+// TODO: comment
+export interface ArrayValue {
+  readonly kind: "array";
+  readonly token: Token;
+  readonly items: readonly Value[];
+}
+
+// TODO: comment
+export interface LiteralValue {
+  readonly kind: "literal";
+  readonly token: Token;
+  readonly value: number | string | boolean;
+}
+
+// TODO: comment
+// TODO: add reference value?
+export type Value =
+  | ObjectValue
+  | ArrayValue
+  | LiteralValue;
+
+// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 /** A declaration which can appear at the top-level of a module. */
 export type ModuleLevelDeclaration<Mutable extends boolean = boolean> =
   | Record<Mutable>
   | Import
-  | Procedure<Mutable>;
+  | Procedure<Mutable>
+  | Constant<Mutable>;
 
 export type MutableModuleLevelDeclaration = ModuleLevelDeclaration<true>;
 
@@ -341,12 +346,13 @@ export interface Module<Mutable extends boolean = boolean> {
    * Depth-first: "Foo.Bar" will appear before "Foo".
    */
   readonly records: //
-    Mutable extends true ? MutableRecordLocation[]
+    Mutable extends true //
+      ? MutableRecordLocation[]
       : readonly RecordLocation[];
 
-  readonly procedures: //
-    Mutable extends true ? MutableProcedure[]
-      : readonly Procedure[];
+  readonly procedures: ReadonlyArray<Procedure<Mutable>>;
+
+  readonly constants: ReadonlyArray<Constant<Mutable>>;
 }
 
 /** Can be assigned to a `Module`. */

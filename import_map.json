@@ -1,6 +1,13 @@
 {
   "imports": {
     "buckwheat": "npm:buckwheat@^1.1.2",
-    "mocha": "https://deno.land/x/deno_mocha@0.3.1/mod.ts"
+    "flags": "https://deno.land/std@0.203.0/flags/mod.ts",
+    "mocha": "https://deno.land/x/deno_mocha@0.3.1/mod.ts",
+    "path": "https://deno.land/std@0.203.0/path/mod.ts",
+    "posix": "https://deno.land/std@0.203.0/path/posix.ts",
+    "soia": "npm:soia@^1.0.10",
+    "walk": "https://deno.land/std@0.203.0/fs/walk.ts",
+    "yaml": "https://deno.land/std@0.203.0/yaml/mod.ts",
+    "zod": "https://deno.land/x/zod@v3.22.4/mod.ts"
   }
 }

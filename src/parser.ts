@@ -3,61 +3,54 @@ import {
   ErrorSink,
   FieldPath,
   Import,
-  ModuleLevelDeclaration,
+  MutableConstant,
   MutableDeclaration,
   MutableField,
   MutableModule,
   MutableModuleLevelDeclaration,
+  MutableProcedure,
   MutableRecord,
   MutableRecordLevelDeclaration,
   Numbering,
   Primitive,
-  Procedure,
   Removed,
   Result,
-  SentenceNode,
   Token,
   UnresolvedArrayType,
   UnresolvedRecordRef,
   UnresolvedType,
+  Value,
 } from "./module.ts";
 import * as casing from "./casing.ts";
 
 /** Runs syntactic analysis on a module. */
 export function parseModule(
-  rootSentenceNode: SentenceNode,
+  tokens: readonly Token[],
   modulePath: string,
 ): Result<MutableModule> {
+  const errors: Error[] = [];
+  const it = new TokenIterator(tokens, errors);
+  const declarations = parseDeclarations(it, "module");
+  it.expectThenMove([""]);
   const nameToDeclaration: { [name: string]: MutableModuleLevelDeclaration } =
     {};
-  const errors: Error[] = [];
-  for (const child of rootSentenceNode.children) {
-    const declaration = parseDeclaration(child, "module", errors);
-    if (!declaration) {
-      continue;
-    }
-    if (
-      declaration.kind === "record" || declaration.kind === "import" ||
-      declaration.kind === "import-as" ||
-      declaration.kind === "procedure"
-    ) {
-      const nameToken = declaration.name;
-      const name = nameToken.text;
-      if (name in nameToDeclaration) {
-        errors.push({
-          token: nameToken,
-          message: `Duplicate identifier "${name}"`,
-        });
-      } else {
-        nameToDeclaration[name] = declaration;
-      }
+  for (const declaration of declarations) {
+    const nameToken = declaration.name;
+    const name = nameToken.text;
+    if (name in nameToDeclaration) {
+      errors.push({
+        token: nameToken,
+        message: `Duplicate identifier "${name}"`,
+      });
+    } else {
+      nameToDeclaration[name] = declaration;
     }
   }
-  const declarations = Object.values(
-    nameToDeclaration,
-  ) as ModuleLevelDeclaration[];
-  const procedures = declarations.filter((d): d is Procedure =>
+  const procedures = declarations.filter((d): d is MutableProcedure =>
     d.kind === "procedure"
+  );
+  const constants = declarations.filter((d): d is MutableConstant =>
+    d.kind === "constant"
   );
   return {
     result: {
@@ -70,17 +63,63 @@ export function parseModule(
       // Will be populated at a later stage.
       records: [],
       procedures: procedures,
+      constants: constants,
     },
     errors: errors,
   };
 }
 
-function parseDeclaration(
-  sentenceNode: SentenceNode,
+function parseDeclarations(
+  it: TokenIterator,
+  parentNode: "module",
+): MutableModuleLevelDeclaration[];
+
+function parseDeclarations(
+  it: TokenIterator,
+  parentNode: "struct" | "enum",
+): MutableRecordLevelDeclaration[];
+
+function parseDeclarations(
+  it: TokenIterator,
   parentNode: "module" | "struct" | "enum",
-  errorSink: ErrorSink,
+): MutableDeclaration[] {
+  const result: MutableDeclaration[] = [];
+  const isEndToken = (t: string) => t === "}" || t === "";
+  while (!isEndToken(it.peek())) {
+    const startIndex = it.index;
+    const declaration = parseDeclaration(it, parentNode);
+    if (declaration !== null) {
+      result.push(declaration);
+    } else {
+      skipTokensToNextDeclaration(it);
+      if (it.index === startIndex) {
+        it.next();
+        skipTokensToNextDeclaration(it);
+      }
+    }
+  }
+  return result;
+}
+
+function skipTokensToNextDeclaration(it: TokenIterator): void {
+  let nestedLevel = 0;
+  while (true) {
+    const token = it.peekBack();
+    if (nestedLevel <= 0 && (token === "}" || token === ";")) {
+      return;
+    } else if (token === "{") {
+      ++nestedLevel;
+    } else if (token === "}") {
+      --nestedLevel;
+    }
+    it.next();
+  }
+}
+
+function parseDeclaration(
+  it: TokenIterator,
+  parentNode: "module" | "struct" | "enum",
 ): MutableDeclaration | null {
-  const it = new TokenIterator(sentenceNode.tokens, errorSink);
   let recordType: "struct" | "enum" = "enum";
   const parentIsRoot = parentNode === "module";
   const expected = [
@@ -90,6 +129,7 @@ function parseDeclaration(
     /*3:*/ parentIsRoot ? null : TOKEN_IS_IDENTIFIER,
     /*4:*/ parentIsRoot ? "import" : null,
     /*5:*/ parentIsRoot ? "procedure" : null,
+    /*6:*/ parentIsRoot ? "const" : null,
   ];
   const match = it.expectThenMove(expected);
   switch (match.case) {
@@ -97,7 +137,7 @@ function parseDeclaration(
       recordType = "struct";
       // Falls through.
     case 1:
-      return parseRecord(it, sentenceNode.children, recordType);
+      return parseRecord(it, recordType);
     case 2:
       return parseRemoved(it, match.token);
     case 3:
@@ -106,6 +146,8 @@ function parseDeclaration(
       return parseImport(it);
     case 5:
       return parseProcedure(it);
+    case 6:
+      return parseConstant(it);
     default:
       return null;
   }
@@ -255,7 +297,6 @@ class RecordBuilder {
 
 function parseRecord(
   it: TokenIterator,
-  childNodes: readonly SentenceNode[],
   recordType: "struct" | "enum",
 ): MutableRecord | null {
   // A struct or an enum.
@@ -267,17 +308,15 @@ function parseRecord(
   if (it.expectThenMove(["{"]).case < 0) {
     return null;
   }
+  const declarations = parseDeclarations(it, recordType);
+  it.expectThenMove(["}"]);
   const builder = new RecordBuilder(
     nameMatch.token,
     recordType,
     it.errors,
   );
-  for (const childNode of childNodes) {
-    const declaration = parseDeclaration(childNode, recordType, it.errors);
-    if (declaration === null) {
-      continue;
-    }
-    builder.addDeclaration(declaration as MutableRecordLevelDeclaration);
+  for (const declaration of declarations) {
+    builder.addDeclaration(declaration);
   }
   return builder.build();
 }
@@ -310,7 +349,7 @@ function parseField(
         break;
       }
       case 1: {
-        number = parseNumber(it);
+        number = parseInt(it);
         if (number < 0) {
           return null;
         }
@@ -471,8 +510,8 @@ function parseRecordRef(
   return { kind: "record", nameParts: nameParts, absolute: absolute };
 }
 
-function parseNumber(it: TokenIterator): number {
-  const match = it.expectThenMove([TOKEN_IS_NUMBER]);
+function parseInt(it: TokenIterator): number {
+  const match = it.expectThenMove([TOKEN_IS_INT]);
   return match.case == 0 ? +match.token.text : -1;
 }
 
@@ -494,7 +533,7 @@ function parseRemoved(
   while (true) {
     const expected: Array<string | TokenPredicate | null> = [
       /*0:*/ /[,-]/.test(expect) ? "," : null,
-      /*1:*/ /[?01]/.test(expect) ? TOKEN_IS_NUMBER : null,
+      /*1:*/ /[?01]/.test(expect) ? TOKEN_IS_INT : null,
       /*2:*/ expect === "-" ? "-" : null,
       /*3:*/ /[?,-]/.test(expect) ? ";" : null,
     ];
@@ -611,7 +650,7 @@ function parseImportGivenName(
   };
 }
 
-function parseProcedure(it: TokenIterator): Procedure | null {
+function parseProcedure(it: TokenIterator): MutableProcedure | null {
   const nameMatch = it.expectThenMove([TOKEN_IS_IDENTIFIER]);
   if (nameMatch.case < 0) {
     return null;
@@ -634,7 +673,7 @@ function parseProcedure(it: TokenIterator): Procedure | null {
 
   let number: number | undefined;
   if (it.expectThenMove(["=", ";"]).case === 0) {
-    number = parseNumber(it);
+    number = parseInt(it);
     if (number < 0) {
       return null;
     }
@@ -657,6 +696,159 @@ function parseProcedure(it: TokenIterator): Procedure | null {
   };
 }
 
+function parseConstant(it: TokenIterator): MutableConstant | null {
+  const nameMatch = it.expectThenMove([TOKEN_IS_IDENTIFIER]);
+  if (nameMatch.case < 0) {
+    return null;
+  }
+  casing.validate(nameMatch.token, "UPPER_UNDERSCORE", it.errors);
+  if (it.expectThenMove([":"]).case < 0) {
+    return null;
+  }
+  const type = parseType(it);
+  if (!type) {
+    return null;
+  }
+  if (it.expectThenMove(["="]).case < 0) {
+    return null;
+  }
+  const value = parseValue(it);
+  if (value === null) {
+    return null;
+  }
+  it.expectThenMove([";"]);
+  return {
+    kind: "constant",
+    name: nameMatch.token,
+    unresolvedType: type,
+    type: undefined,
+    value: value,
+  };
+}
+
+function parseValue(it: TokenIterator): Value | null {
+  const expected = [
+    /*0:*/ "{",
+    /*1:*/ "[",
+    /*2:*/ "false",
+    /*3:*/ "true",
+    /*4:*/ TOKEN_IS_NUMBER,
+    /*5:*/ TOKEN_IS_STRING_LITERAL,
+  ];
+  const match = it.expectThenMove(expected);
+  switch (match.case) {
+    case 0: {
+      const entries = parseObjectValue(it);
+      if (entries === null) {
+        return null;
+      }
+      return {
+        kind: "object",
+        token: match.token,
+        entries: entries,
+      };
+    }
+    case 1: {
+      const items = parseArrayValue(it);
+      if (items === null) {
+        return null;
+      }
+      return {
+        kind: "array",
+        token: match.token,
+        items: items,
+      };
+    }
+    case 2:
+    case 3:
+      return {
+        kind: "literal",
+        token: match.token,
+        value: match.token.text === "true",
+      };
+    case 4:
+      return {
+        kind: "literal",
+        token: match.token,
+        value: Number(match.token.text),
+      };
+    case 5:
+      return {
+        kind: "literal",
+        token: match.token,
+        value: unquoteStringLiteral(match.token.text),
+      };
+    default:
+      return null;
+  }
+}
+
+function parseObjectValue(it: TokenIterator): { [f: string]: Value } | null {
+  if (it.peek() === "}") {
+    it.next();
+    return {};
+  }
+  const entries: { [f: string]: Value } = {};
+  while (true) {
+    const fieldNameMatch = it.expectThenMove([TOKEN_IS_IDENTIFIER]);
+    if (fieldNameMatch.case < 0) {
+      return null;
+    }
+    const fieldName = fieldNameMatch.token.text;
+    if (it.expectThenMove([":"]).case < 0) {
+      return null;
+    }
+    const value = parseValue(it);
+    if (value === null) {
+      return null;
+    }
+    if (fieldName in entries) {
+      it.errors.push({
+        token: fieldNameMatch.token,
+        message: "Duplicate field",
+      });
+    }
+    entries[fieldName] = value;
+    const endMatch = it.expectThenMove([",", "}"]);
+    if (endMatch.case < 0) {
+      return null;
+    }
+    if (endMatch.token.text === "}") {
+      return entries;
+    }
+    if (it.peek() === "}") {
+      it.next();
+      return entries;
+    }
+  }
+}
+
+function parseArrayValue(it: TokenIterator): Value[] | null {
+  if (it.peek() === "]") {
+    it.next();
+    return [];
+  }
+  const items: Value[] = [];
+  while (true) {
+    const item = parseValue(it);
+    if (item === null) {
+      return null;
+    }
+    items.push(item);
+    const match = it.expectThenMove([",", "]"]);
+    if (match.case < 0) {
+      return null;
+    }
+    if (match.token.text === "]") {
+      return items;
+    }
+    if (it.peek() === "]") {
+      it.next();
+      return items;
+    }
+  }
+}
+
 abstract class TokenPredicate {
   abstract matches(token: string): boolean;
   abstract what(): string;
@@ -673,6 +865,18 @@ class TokenIsIdentifier extends TokenPredicate {
 }
 
 const TOKEN_IS_IDENTIFIER = new TokenIsIdentifier();
+
+class TokenIsInt extends TokenPredicate {
+  override matches(token: string): boolean {
+    return /^[0-9]+$/.test(token);
+  }
+
+  override what() {
+    return "number";
+  }
+}
+
+const TOKEN_IS_INT = new TokenIsInt();
 
 class TokenIsNumber extends TokenPredicate {
   override matches(token: string): boolean {
@@ -766,14 +970,22 @@ class TokenIterator {
     return this.tokens[this.tokenIndex].text;
   }
 
+  peekBack(): string {
+    return this.tokens[this.tokenIndex - 1].text;
+  }
+
   next(): void {
     ++this.tokenIndex;
+  }
+
+  get index(): number {
+    return this.tokenIndex;
   }
 
   private tokenIndex = 0;
 }
 
-function simpleHash(input: string) {
+function simpleHash(input: string): number {
   // From https://stackoverflow.com/questions/6122571/simple-non-secure-hash-function-for-javascript
   let hash = 0;
   for (let i = 0; i < input.length; i++) {
@@ -783,4 +995,9 @@ function simpleHash(input: string) {
   }
   // Signed int32 to unsigned int32.
   return hash >>> 0;
+}
+
+function unquoteStringLiteral(quotedString: string): string {
+  // TODO: unescape
+  return quotedString.substring(1, quotedString.length - 1);
 }

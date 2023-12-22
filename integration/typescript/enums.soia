@@ -1,0 +1,27 @@
+enum Weekday {
+  MONDAY;
+  TUESDAY;
+  WEDNESDAY;
+  THURSDAY;
+  FRIDAY;
+  SATURDAY;
+  SUNDAY;
+}
+
+enum JsonValue {
+  NULL;
+  boolean: bool;
+  number: float64;
+  string: string;
+  array: [JsonValue];
+  struct Pair {
+    name: string;
+    value: JsonValue;
+  }
+  object: [Pair];
+}
+
+enum EnumWithRecursiveDefault {
+  struct S { f: EnumWithRecursiveDefault; }
+  f: S;
+}

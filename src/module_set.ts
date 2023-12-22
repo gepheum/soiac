@@ -22,7 +22,7 @@ import {
 } from "./module.ts";
 import { parseModule } from "./parser.ts";
 import { tokenizeModule } from "./tokenizer.ts";
-import * as paths from "https://deno.land/std@0.198.0/path/mod.ts";
+import * as paths from "path";
 
 export class ModuleSet {
   constructor(
@@ -37,6 +37,7 @@ export class ModuleSet {
     }
     const result = this.doParseAndResolve(modulePath);
     this.modules.set(modulePath, result);
+    this.mutableErrors.push(...result.errors);
     return result;
   }
 
@@ -210,6 +211,11 @@ export class ModuleSet {
       this.verifyNumberingConstraint(record.record, errors);
       // Verify that the `key` field of every array type is valid.
       this.validateArrayKeys(record.record, errors);
+      if (record.record.recordType === "enum") {
+        // Verifies that the default value of the enum has a finite
+        // representation.
+        this.verifyEnumDefaultConstraint(record.record, errors);
+      }
     }
 
     ensureAllImportsAreUsed(module, usedImports, errors);
@@ -402,11 +408,48 @@ export class ModuleSet {
     }
   }
 
+  /**
+   * Verifies that the default value of the enum has a finite representation.
+   *
+   * @example enum with an infinite representation:
+   *   enum A { f: B; }
+   *   enum B { f: C; }
+   *   enum C { f: A; }
+   */
+  private verifyEnumDefaultConstraint(
+    record: MutableRecord,
+    errors: ErrorSink,
+  ): void {
+    const originalRecord = record;
+    const traversedRecords = new Set<RecordKey>();
+    while (true) {
+      traversedRecords.add(record.key);
+      const zeroField = record.fields.find((f) => f.number === 0)!;
+      const { type } = zeroField;
+      if (!type || type.kind !== "record" || type.recordType !== "enum") {
+        break;
+      }
+      if (traversedRecords.has(type.key)) {
+        errors.push({
+          token: originalRecord.name,
+          message: "Default value has an infinite representation",
+        });
+        break;
+      }
+      const newRecord = this.recordMap.get(type.key);
+      if (!newRecord) {
+        break;
+      }
+      record = newRecord.record;
+    }
+  }
+
   private modules = new Map<string, Result<Module | null>>();
   // To detect circular dependencies.
   private readonly inProgressSet = new Set<string>();
   private readonly mutableRecordMap = new Map<RecordKey, RecordLocation>();
   private readonly mutableResolvedModules: MutableModule[] = [];
+  private readonly mutableErrors: Error[] = [];
 
   get recordMap(): ReadonlyMap<RecordKey, RecordLocation> {
     return this.mutableRecordMap;
@@ -414,6 +457,10 @@ export class ModuleSet {
 
   get resolvedModules(): ReadonlyArray<Module> {
     return this.mutableResolvedModules;
+  }
+
+  get errors(): readonly Error[] {
+    return this.mutableErrors;
   }
 }
 
@@ -470,7 +517,7 @@ class TypeResolver {
     if (recordOrigin !== "top-level") {
       if (!recordRef.absolute) {
         // Traverse the chain of ancestors from most nested to top-level.
-        for (const fromRecord of recordOrigin.recordAncestors.toReversed()) {
+        for (const fromRecord of [...recordOrigin.recordAncestors].reverse()) {
           const matchMaybe = fromRecord.nameToDeclaration[firstNamePart.text];
           if (matchMaybe && matchMaybe.kind === "record") {
             start = fromRecord;
