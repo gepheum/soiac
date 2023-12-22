@@ -508,7 +508,7 @@ describe("module parser", () => {
   it("struct with duplicate number in removed declaration", () => {
     const actualModule = parse(`
       struct A {
-        removed 0-2, 5, 2-4;
+        removed 0, 1, 2, 5, 2, 3, 4;
       }`);
 
     expect(actualModule).toMatch({
@@ -630,8 +630,8 @@ describe("module parser", () => {
   it("struct with removed fields and explicit numbering", () => {
     const actualModule = parse(`
       struct Point {
-        removed 3, 4-6;
-        removed 0-2;
+        removed 3, 4, 5, 6;
+        removed 0, 1, 2;
       }`);
 
     expect(actualModule).toMatch({
@@ -686,24 +686,6 @@ describe("module parser", () => {
             text: "Enum",
           },
           message: "Enum cannot be empty",
-        },
-      ],
-    });
-  });
-
-  it("removed declaration with invalid range", () => {
-    const actualModule = parse(`
-    struct Foo {
-      removed 3-2;
-    }`);
-
-    expect(actualModule).toMatch({
-      errors: [
-        {
-          token: {
-            text: "2",
-          },
-          expected: "Number greater than 3",
         },
       ],
     });
@@ -816,7 +798,6 @@ describe("module parser", () => {
               token: {
                 text: '"Foo"',
               },
-              value: "Foo",
             },
           },
         },
@@ -872,15 +853,70 @@ describe("module parser", () => {
               text: "FOO",
             },
             unresolvedType: {
-              kind: "primitive",
-              primitive: "string",
+              kind: "array",
+              item: {
+                kind: "record",
+              },
             },
             value: {
-              kind: "literal",
+              kind: "object",
               token: {
-                text: '"Foo"',
+                text: "{",
               },
-              value: "Foo",
+              entries: {
+                foo: {
+                  kind: "literal",
+                  token: {
+                    text: "true",
+                  },
+                },
+                x: {
+                  kind: "array",
+                  items: [
+                    {
+                      kind: "object",
+                      entries: {
+                        foo: {
+                          kind: "literal",
+                          token: {
+                            text: "true",
+                          },
+                        },
+                      },
+                    },
+                    {
+                      kind: "object",
+                      entries: {
+                        bar: {
+                          kind: "literal",
+                          token: {
+                            text: "false",
+                          },
+                        },
+                      },
+                    },
+                    {
+                      kind: "literal",
+                      token: {
+                        text: '"hey"',
+                      }
+                    },
+                    {
+                      kind: "literal",
+                      token: {
+                        text: "3.14",
+                      },
+                    },
+                  ],
+                },
+                empty_array: {
+                  kind: "array",
+                  items: [],
+                },
+                empty_object: {
+                  kind: "object",
+                },
+              },
             },
           },
         },

@@ -522,20 +522,17 @@ function parseRemoved(
   removedToken: Token,
 ): Removed | null {
   const numbers: number[] = [];
-  // The 5 states are:
+  // The 3 states are:
   //   · '?': expect a number or a semicolon
   //   · ',': expect a comma or a semicolon
   //   · '0': expect a single number or the lower bound of a range
-  //   · '-': expect a dash, a comma or a semicolon
-  //   · '1': expect the upper bound of a range
-  let expect: "?" | "," | "0" | "-" | "1" = "?";
+  let expect: "?" | "," | "0" = "?";
   loop:
   while (true) {
     const expected: Array<string | TokenPredicate | null> = [
-      /*0:*/ /[,-]/.test(expect) ? "," : null,
-      /*1:*/ /[?01]/.test(expect) ? TOKEN_IS_INT : null,
-      /*2:*/ expect === "-" ? "-" : null,
-      /*3:*/ /[?,-]/.test(expect) ? ";" : null,
+      /*0:*/ expect === "," ? "," : null,
+      /*1:*/ expect === "?" || expect === "0" ? TOKEN_IS_INT : null,
+      /*3:*/ expect === "?" || expect === "," ? ";" : null,
     ];
     const match = it.expectThenMove(expected);
     switch (match.case) {
@@ -545,35 +542,13 @@ function parseRemoved(
         break;
       }
       case 1: {
-        // A number. We have 2 cases.
+        // A number.
         const number = +match.token.text;
-        if (/[?0]/.test(expect)) {
-          expect = "-";
-          numbers.push(number);
-        } else {
-          // A range, e.g. 2-5.
-          expect = ",";
-          const lastNumber = numbers[numbers.length - 1];
-          if (number <= lastNumber) {
-            it.errors.push({
-              token: match.token,
-              expected: `Number greater than ${lastNumber}`,
-            });
-            return null;
-          }
-          // Append all the numbers from `lastNumber + 1` to `number`.
-          for (let i = lastNumber + 1; i <= number; ++i) {
-            numbers.push(i);
-          }
-        }
+        expect = ",";
+        numbers.push(number);
         break;
       }
       case 2: {
-        // A dash.
-        expect = "1";
-        break;
-      }
-      case 3: {
         // A semicolon.
         break loop;
       }
@@ -761,22 +736,11 @@ function parseValue(it: TokenIterator): Value | null {
     }
     case 2:
     case 3:
-      return {
-        kind: "literal",
-        token: match.token,
-        value: match.token.text === "true",
-      };
     case 4:
-      return {
-        kind: "literal",
-        token: match.token,
-        value: Number(match.token.text),
-      };
     case 5:
       return {
         kind: "literal",
         token: match.token,
-        value: unquoteStringLiteral(match.token.text),
       };
     default:
       return null;
@@ -995,9 +959,4 @@ function simpleHash(input: string): number {
   }
   // Signed int32 to unsigned int32.
   return hash >>> 0;
-}
-
-function unquoteStringLiteral(quotedString: string): string {
-  // TODO: unescape
-  return quotedString.substring(1, quotedString.length - 1);
 }

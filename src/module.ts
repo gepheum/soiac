@@ -280,7 +280,6 @@ export interface ArrayValue {
 export interface LiteralValue {
   readonly kind: "literal";
   readonly token: Token;
-  readonly value: number | string | boolean;
 }
 
 // TODO: comment

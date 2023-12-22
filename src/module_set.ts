@@ -1,4 +1,5 @@
 import { FileReader } from "./io.ts";
+import { unquoteAndUnescape } from "./literals.ts";
 import {
   Error,
   ErrorSink,
@@ -611,7 +612,7 @@ function getModulePath(
   originModulePath: string,
   errors: ErrorSink,
 ): string | undefined {
-  let modulePath = getStringLiteralValue(declaration.modulePath);
+  let modulePath = unquoteAndUnescape(declaration.modulePath.text);
   if (modulePath.startsWith("./") || modulePath.startsWith("../")) {
     // This is a relative path from the module. Let's transform it into a
     // relative path from root.
@@ -627,11 +628,6 @@ function getModulePath(
     return undefined;
   }
   return modulePath;
-}
-
-function getStringLiteralValue(token: Token): string {
-  // Strip the quote characters.
-  return token.text.substring(1, token.text.length - 1);
 }
 
 function collectModuleRecords(
