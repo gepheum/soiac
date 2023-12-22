@@ -19,15 +19,33 @@ export function tokenizeModule(
   // Symbol:                       [{}\[\]\(\)*.:=;|?\-,]
   // Double-quote string literal:  "(\\(\n|\r|\n\r|.)|[^\\\"\n\r])*"?
   // Single-quote string literal:  '(\\(\n|\r|\n\r|.)|[^\\\'\n\r])*'?
-  // Invalid char sequence:        [^\w \n\r\t{}\[\]\(\)*.:=;|?\-,"']+
   //
   // To iterate on this regex, use https://regex101.com/.
   const re =
-    /(\/\*([^*]|\*[^\/])*(\*\/)?)|(\/\/[^\n\r]*)|(\b-?(0|[1-9][0-9]*)(\.[0-9]+)?)\b|\b(\w+)\b|([ \n\r\t]+)|([{}\[\]\(\)*.:=;|?\-,])|("(\\(\n|\r|\n\r|.)|[^\\\"\n\r])*"?)|('(\\(\n|\r|\n\r|.)|[^\\\'\n\r])*'?)|([^\w \n\r\t{}\[\]\(\)*.:=;|?\-,"']+)/g;
+    /(\/\*([^*]|\*[^\/])*(\*\/)?)|(\/\/[^\n\r]*)|(\b-?(0|[1-9][0-9]*)(\.[0-9]+)?)\b|\b(\w+)\b|([ \n\r\t]+)|([{}\[\]\(\)*.:=;|?\-,])|("(\\(\n|\r|\n\r|.)|[^\\\"\n\r])*"?)|('(\\(\n|\r|\n\r|.)|[^\\\'\n\r])*'?)|($)/g;
 
   let group: RegExpExecArray | null;
+  let expectedPosition = 0;
   while ((group = re.exec(code)) !== null) {
     const position = re.lastIndex - group[0].length;
+
+    // Check that all the regex matches are consecutive.
+    // If there is a gap between two matches, it means that we have an invalid
+    // sequence of characters.
+    if (position !== expectedPosition) {
+      const line = lines.advancePosition(expectedPosition);
+      const colNumber = expectedPosition - line.position;
+      errors.push({
+        token: {
+          text: code.substring(expectedPosition, position),
+          position: expectedPosition,
+          line: line,
+          colNumber: colNumber,
+        },
+        message: "Invalid sequence of characters",
+      });
+    }
+    expectedPosition = re.lastIndex;
 
     const line = lines.advancePosition(position);
     const colNumber = position - line.position;
@@ -96,26 +114,14 @@ export function tokenizeModule(
       }
     }
 
-    // Skip invalid sequences.
-    if (group[17] !== undefined) {
-      errors.push({
-        token: token,
-        message: "Invalid sequence of characters",
-      });
-      continue;
-    }
-
     tokens.push(token);
-  }
 
-  // Append a special token for EOF.
-  const lastLine = lines.advancePosition(code.length);
-  tokens.push({
-    text: "",
-    position: code.length,
-    line: lastLine,
-    colNumber: lastLine.line.length,
-  });
+    if (group[17] !== undefined) {
+      // The end of the string has been reached.
+      // The last token we added is an empty string.
+      break;
+    }
+  }
 
   return { result: tokens, errors: errors };
 }
