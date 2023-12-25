@@ -865,56 +865,68 @@ describe("module parser", () => {
               },
               entries: {
                 foo: {
-                  kind: "literal",
-                  token: {
-                    text: "true",
+                  value: {
+                    kind: "literal",
+                    token: {
+                      text: "true",
+                    },
                   },
                 },
                 x: {
-                  kind: "array",
-                  items: [
-                    {
-                      kind: "object",
-                      entries: {
-                        foo: {
-                          kind: "literal",
-                          token: {
-                            text: "true",
+                  value: {
+                    kind: "array",
+                    items: [
+                      {
+                        kind: "object",
+                        entries: {
+                          foo: {
+                            value: {
+                              kind: "literal",
+                              token: {
+                                text: "true",
+                              },
+                            },
                           },
                         },
                       },
-                    },
-                    {
-                      kind: "object",
-                      entries: {
-                        bar: {
-                          kind: "literal",
-                          token: {
-                            text: "false",
+                      {
+                        kind: "object",
+                        entries: {
+                          bar: {
+                            value: {
+                              kind: "literal",
+                              token: {
+                                text: "false",
+                              },
+                            },
                           },
                         },
                       },
-                    },
-                    {
-                      kind: "literal",
-                      token: {
-                        text: '"hey"',
-                      }
-                    },
-                    {
-                      kind: "literal",
-                      token: {
-                        text: "3.14",
+                      {
+                        kind: "literal",
+                        token: {
+                          text: '"hey"',
+                        },
                       },
-                    },
-                  ],
+                      {
+                        kind: "literal",
+                        token: {
+                          text: "3.14",
+                        },
+                      },
+                    ],
+                  },
                 },
                 empty_array: {
-                  kind: "array",
-                  items: [],
+                  value: {
+                    kind: "array",
+                    items: [],
+                  },
                 },
                 empty_object: {
-                  kind: "object",
+                  value: {
+                    kind: "object",
+                  },
                 },
               },
             },

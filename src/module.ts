@@ -111,7 +111,8 @@ export interface MutableFieldPath {
 }
 
 export type FieldPath<Mutable extends boolean = boolean> = //
-  Mutable extends true ? MutableFieldPath
+  Mutable extends true //
+    ? MutableFieldPath
     : Readonly<MutableFieldPath>;
 
 export interface ArrayType<
@@ -245,10 +246,7 @@ export type Procedure<Mutable extends boolean = boolean> = //
   Mutable extends true ? MutableProcedure
     : Readonly<MutableProcedure<false>>;
 
-// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
-// TODO: comment
+/** A `const` declaration. */
 export interface MutableConstant<Mutable extends boolean = true> {
   readonly kind: "constant";
   readonly name: Token;
@@ -259,37 +257,62 @@ export interface MutableConstant<Mutable extends boolean = true> {
 
 export type Constant<Mutable extends boolean = boolean> = //
   Mutable extends true //
-    ? MutableConstant
+    ? MutableConstant //
     : Readonly<MutableConstant<false>>;
 
-// TODO: comment
-export interface ObjectValue {
-  readonly kind: "object";
-  readonly token: Token;
-  readonly entries: Readonly<{ [f: string]: Value }>;
+/** A name:value entry of an object. */
+export interface MutableObjectEntry<Mutable extends boolean = true> {
+  readonly name: Token;
+  readonly value: Value;
 }
 
-// TODO: comment
-export interface ArrayValue {
+export type ObjectEntry = MutableObjectEntry<boolean>;
+
+/** An object value, for example `{r: 255, g: 0, b: 0}`. */
+export interface MutableObjectValue<Mutable extends boolean = true> {
+  readonly kind: "object";
+  readonly token: Token;
+  readonly entries: Readonly<{ [f: string]: ObjectEntry }>;
+  type?: ResolvedType<Mutable>;
+}
+
+export type ObjectValue<Mutable extends boolean = boolean> = //
+  Mutable extends true //
+    ? MutableObjectValue
+    : Readonly<MutableObjectValue<false>>;
+
+/** An array value, for example `[0, 1, 2]`. */
+export interface MutableArrayValue<Mutable extends boolean = true> {
   readonly kind: "array";
   readonly token: Token;
   readonly items: readonly Value[];
+  type?: ResolvedType<Mutable>;
 }
 
-// TODO: comment
-export interface LiteralValue {
+export type ArrayValue<Mutable extends boolean = boolean> = //
+  Mutable extends true //
+    ? MutableArrayValue //
+    : Readonly<MutableArrayValue<false>>;
+
+/** One of: a quoted string, a number, `true`, `false`. */
+export interface MutableLiteralValue<Mutable extends boolean = true> {
   readonly kind: "literal";
   readonly token: Token;
+  type?: ResolvedType<Mutable>;
 }
 
-// TODO: comment
-// TODO: add reference value?
-export type Value =
-  | ObjectValue
-  | ArrayValue
-  | LiteralValue;
+export type LiteralValue<Mutable extends boolean = boolean> = //
+  Mutable extends true //
+    ? MutableLiteralValue //
+    : Readonly<MutableLiteralValue<false>>;
 
-// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+/** The value on the right side of the `=` symbol of a `const` declaration. */
+export type Value<Mutable extends boolean = boolean> =
+  | ObjectValue<Mutable>
+  | ArrayValue<Mutable>
+  | LiteralValue<Mutable>;
+
+export type MutableValue = Value<true>;
 
 /** A declaration which can appear at the top-level of a module. */
 export type ModuleLevelDeclaration<Mutable extends boolean = boolean> =

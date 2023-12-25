@@ -1,5 +1,9 @@
 import { FileReader } from "./io.ts";
-import { unquoteAndUnescape } from "./literals.ts";
+import {
+  isStringLiteral,
+  unquoteAndUnescape,
+  valueHasPrimitiveType,
+} from "./literals.ts";
 import {
   Error,
   ErrorSink,
@@ -11,6 +15,7 @@ import {
   MutableRecord,
   MutableRecordLocation,
   MutableResolvedType,
+  MutableValue,
   Record,
   RecordKey,
   RecordLocation,
@@ -20,6 +25,7 @@ import {
   Token,
   UnresolvedRecordRef,
   UnresolvedType,
+  Value,
 } from "./module.ts";
 import { parseModule } from "./parser.ts";
 import { tokenizeModule } from "./tokenizer.ts";
@@ -200,6 +206,11 @@ export class ModuleSet {
       procedure.requestType = typeResolver.resolve(request, "top-level");
       procedure.responseType = typeResolver.resolve(response, "top-level");
     }
+    // Resolve every constant type. Store the result in the constant object.
+    for (const constant of module.constants) {
+      const { unresolvedType } = constant;
+      constant.type = typeResolver.resolve(unresolvedType, "top-level");
+    }
 
     // Loop 3: once all the types have been resolved.
     for (const record of moduleRecords.values()) {
@@ -217,6 +228,13 @@ export class ModuleSet {
         // representation.
         this.verifyEnumDefaultConstraint(record.record, errors);
       }
+    }
+    for (const constant of module.constants) {
+      const { type } = constant;
+      if (type === undefined) {
+        continue;
+      }
+      this.verifyValueType(constant.value, type, errors);
     }
 
     ensureAllImportsAreUsed(module, usedImports, errors);
@@ -443,6 +461,185 @@ export class ModuleSet {
       }
       record = newRecord.record;
     }
+  }
+
+  private verifyValueType(
+    value: MutableValue,
+    expectedType: ResolvedType,
+    errors: ErrorSink,
+  ): boolean {
+    value.type = expectedType;
+    switch (expectedType.kind) {
+      case "nullable": {
+        if (value.kind === "literal" && value.token.text === "null") {
+          return true;
+        }
+        return this.verifyValueType(value, expectedType.value, errors);
+      }
+      case "array": {
+        if (value.kind !== "array") {
+          errors.push({
+            token: value.token,
+            expected: "array",
+          });
+          return false;
+        }
+        value.items.forEach((v) =>
+          this.verifyValueType(v, expectedType.item, errors)
+        );
+        return true;
+      }
+      case "record": {
+        const record = this.recordMap.get(expectedType.key);
+        if (!record) {
+          // An error was already registered.
+          return false;
+        }
+        return record.record.recordType === "struct"
+          ? this.verifyValueStructType(value, record.record, errors)
+          : this.verifyValueEnumType(value, record.record, errors);
+      }
+      case "primitive": {
+        if (
+          value.kind !== "literal" ||
+          !valueHasPrimitiveType(value.token.text, expectedType.primitive)
+        ) {
+          errors.push({
+            token: value.token,
+            expected: expectedType.primitive,
+          });
+          return false;
+        }
+        return true;
+      }
+    }
+  }
+
+  private verifyValueEnumType(
+    value: Value,
+    expectedEnum: Record,
+    errors: ErrorSink,
+  ): boolean {
+    const { token } = value;
+    if (value.kind === "literal" && isStringLiteral(token.text)) {
+      // The value is a string.
+      // It must match the name of one of the constants defined in the enum.
+      const fieldName = unquoteAndUnescape(token.text);
+      const field = expectedEnum.nameToDeclaration[fieldName];
+      if (!field || field.kind !== "field") {
+        errors.push({
+          token: token,
+          message: `field not found in enum ${expectedEnum.name.text}`,
+        });
+        return false;
+      }
+      if (field.type) {
+        errors.push({
+          token: token,
+          message: "refers to a value field",
+        });
+        return false;
+      }
+    } else if (value.kind === "object") {
+      // The value is an object. It must have exactly two entries:
+      //   · 'kind' must match the name of one of the value fields defined in
+      //     the enum
+      //   · 'value' must match the type of the value field
+      const entries = { ...value.entries };
+      const kindEntry = entries.kind;
+      if (!kindEntry) {
+        errors.push({
+          token: token,
+          message: "missing entry: kind",
+        });
+        return false;
+      }
+      delete entries.kind;
+      const kindValueToken = kindEntry.value.token;
+      if (
+        kindEntry.value.kind !== "literal" ||
+        !isStringLiteral(kindValueToken.text)
+      ) {
+        errors.push({
+          token: kindValueToken,
+          expected: "string",
+        });
+        return false;
+      }
+      const fieldName = unquoteAndUnescape(kindValueToken.text);
+      const field = expectedEnum.nameToDeclaration[fieldName];
+      if (!field || field.kind !== "field") {
+        errors.push({
+          token: kindValueToken,
+          message: `field not found in enum ${expectedEnum.name.text}`,
+        });
+        return false;
+      }
+      if (!field.type) {
+        errors.push({
+          token: kindValueToken,
+          message: "refers to a constant field",
+        });
+        return false;
+      }
+      const enumValue = entries.value;
+      if (!enumValue) {
+        errors.push({
+          token: token,
+          message: "missing entry: value",
+        });
+        return false;
+      }
+      delete entries.value;
+      this.verifyValueType(enumValue.value, field.type, errors);
+      const extraEntries = Object.values(entries);
+      if (extraEntries.length !== 0) {
+        const extraEntry = extraEntries[0];
+        errors.push({
+          token: extraEntry.name,
+          message: "extraneous entry",
+        });
+        return false;
+      }
+    } else {
+      // The value is neither a string nor an object. It can't be of enum type.
+      errors.push({
+        token: token,
+        expected: "string or object",
+      });
+      return false;
+    }
+    return true;
+  }
+
+  private verifyValueStructType(
+    value: Value,
+    expectedStruct: Record,
+    errors: ErrorSink,
+  ): boolean {
+    const { token } = value;
+    if (value.kind !== "object") {
+      errors.push({
+        token: token,
+        expected: "object",
+      });
+      return false;
+    }
+    for (const [fieldName, fieldEntry] of Object.entries(value.entries)) {
+      const field = expectedStruct.nameToDeclaration[fieldName];
+      if (!field || field.kind !== "field") {
+        errors.push({
+          token: fieldEntry.name,
+          message: `field not found in enum ${expectedStruct.name.text}`,
+        });
+        return false;
+      }
+      if (!field.type) {
+        return false;
+      }
+      this.verifyValueType(fieldEntry.value, field.type, errors);
+    }
+    return true;
   }
 
   private modules = new Map<string, Result<Module | null>>();

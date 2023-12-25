@@ -877,4 +877,230 @@ describe("module set", () => {
       ],
     });
   });
+
+  describe("constants", () => {
+    it("works", () => {
+      const fakeFileReader = new FakeFileReader();
+      fakeFileReader.pathToCode.set(
+        "path/to/root/path/to/module",
+        `
+        struct Color {
+          r: int32;
+          g: int32;
+          b: int32;
+        }
+
+        struct Point {
+          x: float32;
+          y: float32;
+        }
+
+        struct Shape {
+          color: Color;
+          points: [Point];
+        }
+
+        const MY_SHAPE: Shape = {
+          color: {
+            r: 255,
+            g: 0,
+            b: 0,
+          },
+          points: [
+            {
+              x: 10.0,
+              y: 10.0,
+            },
+            {
+              x: 20.0,
+              y: 10.0,
+            },
+            {
+              x: 10.0,
+              y: 20.0,
+            },
+          ],
+        };
+        const NULL_SHAPE: Shape? = null;
+      `,
+      );
+      const moduleSet = new ModuleSet(fakeFileReader, "path/to/root");
+      const actual = moduleSet.parseAndResolve("path/to/module");
+
+      expect(actual).toMatch({
+        result: {
+          nameToDeclaration: {
+            MY_SHAPE: {
+              kind: "constant",
+              name: {
+                text: "MY_SHAPE",
+              },
+              type: {
+                kind: "record",
+                key: "path/to/module:188",
+                recordType: "struct",
+                refToken: {
+                  text: "Shape",
+                },
+              },
+              value: {
+                kind: "object",
+                token: {
+                  text: "{",
+                },
+                entries: {
+                  color: {
+                    name: {
+                      text: "color",
+                    },
+                    value: {
+                      kind: "object",
+                      token: {
+                        text: "{",
+                      },
+                      entries: {
+                        r: {
+                          value: {
+                            kind: "literal",
+                            token: {
+                              text: "255",
+                            },
+                            type: {
+                              kind: "primitive",
+                              primitive: "int32",
+                            },
+                          },
+                        },
+                        g: {},
+                        b: {},
+                      },
+                      type: {
+                        kind: "record",
+                        refToken: {
+                          text: "Color",
+                        },
+                      },
+                    },
+                  },
+                  points: {
+                    value: {
+                      kind: "array",
+                      token: {
+                        text: "[",
+                      },
+                      items: [
+                        {
+                          kind: "object",
+                          token: {
+                            text: "{",
+                          },
+                          entries: {
+                            x: {
+                              value: {
+                                kind: "literal",
+                                token: {
+                                  text: "10.0",
+                                },
+                                type: {
+                                  kind: "primitive",
+                                  primitive: "float32",
+                                },
+                              },
+                            },
+                            y: {},
+                          },
+                          type: {
+                            kind: "record",
+                            refToken: {
+                              text: "Point",
+                            },
+                          },
+                        },
+                        {},
+                        {},
+                      ],
+                      type: {
+                        kind: "array",
+                        item: {
+                          refToken: {
+                            text: "Point",
+                          },
+                        },
+                        key: undefined,
+                      },
+                    },
+                  },
+                },
+                type: {
+                  kind: "record",
+                  refToken: {
+                    text: "Shape",
+                  },
+                },
+              },
+            },
+            NULL_SHAPE: {
+              kind: "constant",
+              type: {
+                kind: "nullable",
+                value: {
+                  refToken: {
+                    text: "Shape",
+                  },
+                },
+              },
+              value: {
+                kind: "literal",
+                token: {
+                  text: "null",
+                },
+                type: {
+                  kind: "nullable",
+                  value: {
+                    refToken: {
+                      text: "Shape",
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        errors: [],
+      });
+    });
+
+    it("type error", () => {
+      const fakeFileReader = new FakeFileReader();
+      fakeFileReader.pathToCode.set(
+        "path/to/root/path/to/module",
+        `
+          struct Color {
+            r: int32;
+            g: int32;
+            b: int32;
+          }
+  
+          const BLUE: Color = {
+            r: 0,
+            g: 0,
+            b: 255.0,
+          };
+        `,
+      );
+      const moduleSet = new ModuleSet(fakeFileReader, "path/to/root");
+      const actual = moduleSet.parseAndResolve("path/to/module");
+
+      expect(actual).toMatch({
+        errors: [
+          {
+            token: {
+              text: "255.0",
+            },
+            expected: "int32",
+          },
+        ],
+      });
+    });
+  });
 });

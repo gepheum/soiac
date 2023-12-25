@@ -8,9 +8,11 @@ import {
   MutableField,
   MutableModule,
   MutableModuleLevelDeclaration,
+  MutableObjectEntry,
   MutableProcedure,
   MutableRecord,
   MutableRecordLevelDeclaration,
+  MutableValue,
   Numbering,
   Primitive,
   Removed,
@@ -19,7 +21,6 @@ import {
   UnresolvedArrayType,
   UnresolvedRecordRef,
   UnresolvedType,
-  Value,
 } from "./module.ts";
 import * as casing from "./casing.ts";
 
@@ -701,14 +702,15 @@ function parseConstant(it: TokenIterator): MutableConstant | null {
   };
 }
 
-function parseValue(it: TokenIterator): Value | null {
+function parseValue(it: TokenIterator): MutableValue | null {
   const expected = [
     /*0:*/ "{",
     /*1:*/ "[",
     /*2:*/ "false",
     /*3:*/ "true",
-    /*4:*/ TOKEN_IS_NUMBER,
-    /*5:*/ TOKEN_IS_STRING_LITERAL,
+    /*4:*/ "null",
+    /*5:*/ TOKEN_IS_NUMBER,
+    /*6:*/ TOKEN_IS_STRING_LITERAL,
   ];
   const match = it.expectThenMove(expected);
   switch (match.case) {
@@ -738,6 +740,7 @@ function parseValue(it: TokenIterator): Value | null {
     case 3:
     case 4:
     case 5:
+    case 6:
       return {
         kind: "literal",
         token: match.token,
@@ -747,17 +750,20 @@ function parseValue(it: TokenIterator): Value | null {
   }
 }
 
-function parseObjectValue(it: TokenIterator): { [f: string]: Value } | null {
+function parseObjectValue(
+  it: TokenIterator,
+): { [f: string]: MutableObjectEntry } | null {
   if (it.peek() === "}") {
     it.next();
     return {};
   }
-  const entries: { [f: string]: Value } = {};
+  const entries: { [f: string]: MutableObjectEntry } = {};
   while (true) {
     const fieldNameMatch = it.expectThenMove([TOKEN_IS_IDENTIFIER]);
     if (fieldNameMatch.case < 0) {
       return null;
     }
+    const fieldNameToken = fieldNameMatch.token;
     const fieldName = fieldNameMatch.token.text;
     if (it.expectThenMove([":"]).case < 0) {
       return null;
@@ -772,7 +778,10 @@ function parseObjectValue(it: TokenIterator): { [f: string]: Value } | null {
         message: "Duplicate field",
       });
     }
-    entries[fieldName] = value;
+    entries[fieldName] = {
+      name: fieldNameToken,
+      value: value,
+    };
     const endMatch = it.expectThenMove([",", "}"]);
     if (endMatch.case < 0) {
       return null;
@@ -787,12 +796,12 @@ function parseObjectValue(it: TokenIterator): { [f: string]: Value } | null {
   }
 }
 
-function parseArrayValue(it: TokenIterator): Value[] | null {
+function parseArrayValue(it: TokenIterator): MutableValue[] | null {
   if (it.peek() === "]") {
     it.next();
     return [];
   }
-  const items: Value[] = [];
+  const items: MutableValue[] = [];
   while (true) {
     const item = parseValue(it);
     if (item === null) {
