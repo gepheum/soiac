@@ -1065,6 +1065,10 @@ describe("module set", () => {
               },
             },
           },
+          constants: [
+            {},
+            {},
+          ],
         },
         errors: [],
       });
