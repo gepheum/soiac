@@ -47,6 +47,7 @@ describe("literals", () => {
       expect(valueHasPrimitiveType("2147483647", "int32")).toBe(true);
       expect(valueHasPrimitiveType("-2147483649", "int32")).toBe(false);
       expect(valueHasPrimitiveType("2147483648", "int32")).toBe(false);
+      expect(valueHasPrimitiveType("3.14", "int32")).toBe(false);
     });
 
     it("works with int64", () => {
@@ -56,6 +57,7 @@ describe("literals", () => {
         false,
       );
       expect(valueHasPrimitiveType("9223372036854775808", "int64")).toBe(false);
+      expect(valueHasPrimitiveType("3.14", "int64")).toBe(false);
     });
 
     it("works with uint64", () => {
@@ -66,6 +68,7 @@ describe("literals", () => {
       expect(valueHasPrimitiveType("18446744073709551616", "uint64")).toBe(
         false,
       );
+      expect(valueHasPrimitiveType("3.14", "uint64")).toBe(false);
     });
 
     it("works with float32", () => {
