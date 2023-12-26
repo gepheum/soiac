@@ -536,6 +536,47 @@ describe("module set", () => {
         ],
       });
     });
+
+    it("procedure and constant types are validated", () => {
+      const fakeFileReader = new FakeFileReader();
+      fakeFileReader.pathToCode.set(
+        "path/to/root/path/to/module",
+        `
+          struct Foo {
+          }
+
+          procedure Pa([Foo|a]): string;
+          procedure Pb(string): [Foo|b];
+          const FOO: [Foo|c] = [];
+        `,
+      );
+
+      const moduleSet = new ModuleSet(fakeFileReader, "path/to/root");
+      const actual = moduleSet.parseAndResolve("path/to/module");
+
+      expect(actual).toMatch({
+        errors: [
+          {
+            token: {
+              text: "a",
+            },
+            message: "Field not found in struct Foo",
+          },
+          {
+            token: {
+              text: "b",
+            },
+            message: "Field not found in struct Foo",
+          },
+          {
+            token: {
+              text: "c",
+            },
+            message: "Field not found in struct Foo",
+          },
+        ],
+      });
+    });
   });
 
   it("enum default must have finite representation", () => {

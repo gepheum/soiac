@@ -198,21 +198,8 @@ export class ModuleSet {
     for (const record of moduleRecords.values()) {
       this.storeResolvedFieldTypes(record, typeResolver);
     }
-    // Resolve every request/response type of every procedure in the module.
-    // Store the result in the Procedure object.
-    for (const procedure of module.procedures) {
-      const request = procedure.unresolvedRequestType;
-      const response = procedure.unresolvedResponseType;
-      procedure.requestType = typeResolver.resolve(request, "top-level");
-      procedure.responseType = typeResolver.resolve(response, "top-level");
-    }
-    // Resolve every constant type. Store the result in the constant object.
-    for (const constant of module.constants) {
-      const { unresolvedType } = constant;
-      constant.type = typeResolver.resolve(unresolvedType, "top-level");
-    }
 
-    // Loop 3: once all the types have been resolved.
+    // Loop 3: once all the types of record fields have been resolved.
     for (const record of moduleRecords.values()) {
       /// For every field, determine if the field is recursive, i.e. the field
       // type depends on the record where the field is defined.
@@ -222,19 +209,47 @@ export class ModuleSet {
       // has a direct dependency on a record with implicit numbering.
       this.verifyNumberingConstraint(record.record, errors);
       // Verify that the `key` field of every array type is valid.
-      this.validateArrayKeys(record.record, errors);
+      for (const field of record.record.fields) {
+        const { type } = field;
+        if (type) {
+          this.validateArrayKeys(type, errors);
+        }
+      }
       if (record.record.recordType === "enum") {
         // Verifies that the default value of the enum has a finite
         // representation.
         this.verifyEnumDefaultConstraint(record.record, errors);
       }
     }
-    for (const constant of module.constants) {
-      const { type } = constant;
-      if (type === undefined) {
-        continue;
+    // Resolve every request/response type of every procedure in the module.
+    // Store the result in the Procedure object.
+    for (const procedure of module.procedures) {
+      {
+        const request = procedure.unresolvedRequestType;
+        const requestType = typeResolver.resolve(request, "top-level");
+        if (requestType) {
+          this.validateArrayKeys(requestType, errors);
+          procedure.requestType = requestType;
+        }
       }
-      this.verifyValueType(constant.value, type, errors);
+      {
+        const response = procedure.unresolvedResponseType;
+        const responseType = typeResolver.resolve(response, "top-level");
+        if (responseType) {
+          this.validateArrayKeys(responseType, errors);
+          procedure.responseType = responseType;
+        }
+      }
+    }
+    // Resolve every constant type. Store the result in the constant object.
+    for (const constant of module.constants) {
+      const { unresolvedType } = constant;
+      const type = typeResolver.resolve(unresolvedType, "top-level");
+      if (type) {
+        this.validateArrayKeys(type, errors);
+        this.verifyValueType(constant.value, type, errors);
+        constant.type = type;
+      }
     }
 
     ensureAllImportsAreUsed(module, usedImports, errors);
@@ -340,10 +355,13 @@ export class ModuleSet {
   }
 
   /**
-   * Verifies that the `key` field of every array type is valid.
-   * Populates the `keyType` field of every field path.
+   * Verifies that the `key` field of every array type found in `topLevelType`
+   * is valid. Populates the `keyType` field of every field path.
    */
-  private validateArrayKeys(record: MutableRecord, errors: ErrorSink): void {
+  private validateArrayKeys(
+    topLevelType: MutableResolvedType,
+    errors: ErrorSink,
+  ): void {
     const findFieldOrError = (
       struct: Record,
       fieldName: Token,
@@ -419,12 +437,7 @@ export class ModuleSet {
       }
     };
 
-    for (const field of record.fields) {
-      const { type } = field;
-      if (type) {
-        traverseType(type);
-      }
-    }
+    traverseType(topLevelType);
   }
 
   /**
@@ -673,7 +686,7 @@ class TypeResolver {
   resolve(
     input: UnresolvedType,
     recordOrigin: RecordLocation | "top-level",
-  ): ResolvedType | undefined {
+  ): MutableResolvedType | undefined {
     switch (input.kind) {
       case "primitive":
         return input;
