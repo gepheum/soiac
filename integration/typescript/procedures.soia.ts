@@ -25,9 +25,3 @@ export const WITH_EXPLICIT_NUMBER: $.Procedure<
   requestSerializer: $.arraySerializer(Point.SERIALIZER),
   responseSerializer: $.nullableSerializer(JsonValue.SERIALIZER),
 };
-
-// -----------------------------------------------------------------------------
-// Initialize the serializers
-// -----------------------------------------------------------------------------
-
-const _MODULE_PATH = "procedures.soia";

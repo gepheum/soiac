@@ -65,21 +65,25 @@ class TsModuleCodeGenerator {
       this.defineClassesAndNamespaceForRecord(recordLocation);
     }
 
-    this.push(`
-      ${TsModuleCodeGenerator.SEPARATOR}
-      // Procedures
-      ${TsModuleCodeGenerator.SEPARATOR}\n\n`);
+    if (this.inModule.procedures.length) {
+      this.push(`
+        ${TsModuleCodeGenerator.SEPARATOR}
+        // Procedures
+        ${TsModuleCodeGenerator.SEPARATOR}\n\n`);
+    }
     for (const procedure of this.inModule.procedures) {
       this.defineProcedure(procedure);
     }
 
     // Once we have defined all the classes, we can initialize the serializers.
-    this.push(`
+    if (this.inModule.records.length) {
+      this.push(`
       ${TsModuleCodeGenerator.SEPARATOR}
       // Initialize the serializers
       ${TsModuleCodeGenerator.SEPARATOR}\n\n
 
       const _MODULE_PATH = "${this.inModule.path}";\n\n`);
+    }
 
     for (const recordLocation of this.inModule.records) {
       this.initializeSerializer(recordLocation);
