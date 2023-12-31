@@ -1,9 +1,13 @@
 import {
+  Constant,
+  LiteralValue,
   Module,
+  ObjectValue,
   Procedure,
   RecordKey,
   RecordLocation,
   ResolvedType,
+  Value,
 } from "../module.ts";
 import { ModuleSet } from "../module_set.ts";
 import { CodeGenerator } from "../code_generator.ts";
@@ -15,6 +19,7 @@ import {
   IndexableField,
   RecordInfo,
   StructField,
+  structFieldNameToProperty,
   StructInfo,
 } from "./typescript/record_info.ts";
 import { TsType } from "./typescript/ts_type.ts";
@@ -22,6 +27,7 @@ import { TypeSpeller } from "./typescript/type_speller.ts";
 import * as paths from "https://deno.land/std@0.198.0/path/mod.ts";
 import * as casing from "../casing.ts";
 import { z } from "zod";
+import { unquoteAndUnescape } from "../literals.ts";
 
 export class TypescriptCodeGenerator implements CodeGenerator<undefined> {
   readonly id = "typescript";
@@ -70,23 +76,32 @@ class TsModuleCodeGenerator {
         ${TsModuleCodeGenerator.SEPARATOR}
         // Procedures
         ${TsModuleCodeGenerator.SEPARATOR}\n\n`);
-    }
-    for (const procedure of this.inModule.procedures) {
-      this.defineProcedure(procedure);
+      for (const procedure of this.inModule.procedures) {
+        this.defineProcedure(procedure);
+      }
     }
 
     // Once we have defined all the classes, we can initialize the serializers.
     if (this.inModule.records.length) {
       this.push(`
-      ${TsModuleCodeGenerator.SEPARATOR}
-      // Initialize the serializers
-      ${TsModuleCodeGenerator.SEPARATOR}\n\n
+        ${TsModuleCodeGenerator.SEPARATOR}
+        // Initialize the serializers
+        ${TsModuleCodeGenerator.SEPARATOR}\n\n
 
-      const _MODULE_PATH = "${this.inModule.path}";\n\n`);
+        const _MODULE_PATH = "${this.inModule.path}";\n\n`);
+      for (const recordLocation of this.inModule.records) {
+        this.initializeSerializer(recordLocation);
+      }
     }
 
-    for (const recordLocation of this.inModule.records) {
-      this.initializeSerializer(recordLocation);
+    if (this.inModule.constants.length) {
+      this.push(`
+        ${TsModuleCodeGenerator.SEPARATOR}
+        // Constants
+        ${TsModuleCodeGenerator.SEPARATOR}\n\n`);
+      for (const constant of this.inModule.constants) {
+        this.defineConstant(constant);
+      }
     }
 
     return this.joinLinesAndFixFormatting();
@@ -825,6 +840,98 @@ class TsModuleCodeGenerator {
     }
     const _: never = type;
     throw TypeError();
+  }
+
+  private defineConstant(constant: Constant): void {
+    const name = constant.name.text;
+    this.push(`export const ${name} = `);
+    this.spellValue(constant.value);
+    this.push(";\n\n");
+  }
+
+  private spellValue(value: Value): void {
+    switch (value.kind) {
+      case "array": {
+        const { items } = value;
+        if (items.length <= 0) {
+          this.push("$._EMPTY_ARRAY");
+        } else {
+          this.push("$._toFrozenArray(\n");
+          this.push("[\n");
+          for (const item of items) {
+            this.spellValue(item);
+            this.push(",\n");
+          }
+          this.push("],\n");
+          this.push("(e) => e,\n");
+          this.push(")");
+        }
+        break;
+      }
+      case "literal": {
+        this.push(this.getLiteralValueExpr(value));
+        break;
+      }
+      case "object": {
+        this.spellObjectValue(value);
+        break;
+      }
+    }
+  }
+
+  private spellObjectValue(value: ObjectValue): void {
+    const className = this.typeSpeller.getClassName(value.type!);
+    switch (className.recordType) {
+      case "struct": {
+        this.push(`${className.type}.create({\n`);
+        for (const entry of Object.values(value.entries)) {
+          const property = structFieldNameToProperty(entry.name.text);
+          this.push(`${property}: `);
+          this.spellValue(entry.value);
+          this.push(",\n");
+        }
+        this.push("})");
+        break;
+      }
+      case "enum": {
+        this.push(`${className.type}.fromCopyable({\n`);
+        this.push(`kind: ${value.entries["kind"].value.token.text},\n`);
+        this.push("value: ");
+        this.spellValue(value.entries["value"].value);
+        this.push(",\n})");
+        break;
+      }
+    }
+  }
+
+  private getLiteralValueExpr(value: LiteralValue): string {
+    const { type } = value;
+    if (type!.kind === "null") {
+      return "null";
+    }
+    if (type!.kind === "enum") {
+      // An enum constant.
+      const className = this.typeSpeller.getClassName(type!.key);
+      return `${className.type}.fromCopyable(${value.token.text})`;
+    }
+    const { text } = value.token;
+    switch (type!.primitive) {
+      case "bool":
+      case "int32":
+      case "float32":
+      case "float64":
+        return text;
+      case "int64":
+      case "uint64":
+        return `bigint("${text}")`;
+      case "timestamp":
+        return `$.Timestamp.parse(${text})`;
+      case "string":
+        return JSON.stringify(unquoteAndUnescape(text));
+      case "bytes":
+        return `$.ByteString.fromBase16(${text.toUpperCase()})`;
+    }
+    throw new TypeError(`${type}`);
   }
 
   private static readonly SEPARATOR = `// ${"-".repeat(80 - "// ".length)}`;

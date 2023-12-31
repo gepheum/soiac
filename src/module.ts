@@ -263,17 +263,20 @@ export type Constant<Mutable extends boolean = boolean> = //
 /** A name:value entry of an object. */
 export interface MutableObjectEntry<Mutable extends boolean = true> {
   readonly name: Token;
-  readonly value: Value;
+  readonly value: Value<Mutable>;
 }
 
-export type ObjectEntry = MutableObjectEntry<boolean>;
+export type ObjectEntry<Mutable extends boolean = boolean> = //
+  Mutable extends true //
+    ? MutableObjectEntry //
+    : Readonly<MutableObjectEntry<false>>;
 
 /** An object value, for example `{r: 255, g: 0, b: 0}`. */
 export interface MutableObjectValue<Mutable extends boolean = true> {
   readonly kind: "object";
   readonly token: Token;
-  readonly entries: Readonly<{ [f: string]: ObjectEntry }>;
-  type?: ResolvedType<Mutable>;
+  readonly entries: Readonly<{ [f: string]: ObjectEntry<Mutable> }>;
+  type?: RecordKey;
 }
 
 export type ObjectValue<Mutable extends boolean = boolean> = //
@@ -285,8 +288,8 @@ export type ObjectValue<Mutable extends boolean = boolean> = //
 export interface MutableArrayValue<Mutable extends boolean = true> {
   readonly kind: "array";
   readonly token: Token;
-  readonly items: readonly Value[];
-  type?: ResolvedType<Mutable>;
+  readonly items: ReadonlyArray<Value<Mutable>>;
+  key?: FieldPath | undefined;
 }
 
 export type ArrayValue<Mutable extends boolean = boolean> = //
@@ -295,16 +298,19 @@ export type ArrayValue<Mutable extends boolean = boolean> = //
     : Readonly<MutableArrayValue<false>>;
 
 /** One of: a quoted string, a number, `true`, `false`. */
-export interface MutableLiteralValue<Mutable extends boolean = true> {
+export interface MutableLiteralValue {
   readonly kind: "literal";
   readonly token: Token;
-  type?: ResolvedType<Mutable>;
+  type?:
+    | PrimitiveType
+    | { kind: "enum"; key: RecordKey }
+    | { kind: "null" };
 }
 
 export type LiteralValue<Mutable extends boolean = boolean> = //
   Mutable extends true //
     ? MutableLiteralValue //
-    : Readonly<MutableLiteralValue<false>>;
+    : Readonly<MutableLiteralValue>;
 
 /** The value on the right side of the `=` symbol of a `const` declaration. */
 export type Value<Mutable extends boolean = boolean> =

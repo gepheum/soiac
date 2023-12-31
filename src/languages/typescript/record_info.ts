@@ -478,6 +478,16 @@ const ENUM_COMMON_GENERATED_PROPERTIES: ReadonlySet<string> = new Set([
   "SERIALIZER",
 ]);
 
+/**
+ * Returns the name of the TypeScript property for the given struct field.
+ * Expects a field name as it appears in the `.soia` file.
+ */
+export function structFieldNameToProperty(fieldName: string): string {
+  return getStructFieldProperty(
+    convert(fieldName, "lower_underscore", "lowerCamel"),
+  );
+}
+
 // Returns the name of the TypeScript property for the given struct field.
 // Obtained by appending a "_" suffix to the desired name if it conflicts with a
 // common generated property.

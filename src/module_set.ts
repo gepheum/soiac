@@ -25,7 +25,6 @@ import {
   Token,
   UnresolvedRecordRef,
   UnresolvedType,
-  Value,
 } from "./module.ts";
 import { parseModule } from "./parser.ts";
 import { tokenizeModule } from "./tokenizer.ts";
@@ -481,10 +480,10 @@ export class ModuleSet {
     expectedType: ResolvedType,
     errors: ErrorSink,
   ): boolean {
-    value.type = expectedType;
     switch (expectedType.kind) {
       case "nullable": {
         if (value.kind === "literal" && value.token.text === "null") {
+          value.type = { kind: "null" };
           return true;
         }
         return this.verifyValueType(value, expectedType.value, errors);
@@ -500,6 +499,7 @@ export class ModuleSet {
         value.items.forEach((v) =>
           this.verifyValueType(v, expectedType.item, errors)
         );
+        value.key = expectedType.key;
         return true;
       }
       case "record": {
@@ -523,13 +523,14 @@ export class ModuleSet {
           });
           return false;
         }
+        value.type = expectedType;
         return true;
       }
     }
   }
 
   private verifyValueEnumType(
-    value: Value,
+    value: MutableValue,
     expectedEnum: Record,
     errors: ErrorSink,
   ): boolean {
@@ -553,6 +554,10 @@ export class ModuleSet {
         });
         return false;
       }
+      value.type = {
+        kind: "enum",
+        key: expectedEnum.key,
+      };
     } else if (value.kind === "object") {
       // The value is an object. It must have exactly two entries:
       //   · 'kind' must match the name of one of the value fields defined in
@@ -614,6 +619,7 @@ export class ModuleSet {
         });
         return false;
       }
+      value.type = expectedEnum.key;
     } else {
       // The value is neither a string nor an object. It can't be of enum type.
       errors.push({
@@ -626,7 +632,7 @@ export class ModuleSet {
   }
 
   private verifyValueStructType(
-    value: Value,
+    value: MutableValue,
     expectedStruct: Record,
     errors: ErrorSink,
   ): boolean {
@@ -652,6 +658,7 @@ export class ModuleSet {
       }
       this.verifyValueType(fieldEntry.value, field.type, errors);
     }
+    value.type = expectedStruct.key;
     return true;
   }
 

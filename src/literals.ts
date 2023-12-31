@@ -20,9 +20,15 @@ export function valueHasPrimitiveType(
     case "bytes":
       return isStringLiteral(token) &&
         /^([0-9A-Fa-f]{2})*$/.test(unquoteAndUnescape(token));
-    case "timestamp":
-      return isStringLiteral(token) &&
-        !Number.isNaN(new Date(unquoteAndUnescape(token)).valueOf());
+    case "timestamp": {
+      if (!isStringLiteral(token)) {
+        return false;
+      }
+      const dateTime = unquoteAndUnescape(token);
+      return !Number.isNaN(new Date(dateTime).valueOf()) &&
+        // A timezone is required.
+        /(Z|[+-]\d\d:\d\d)$/.test(dateTime);
+    }
     case "int32":
       return isIntLiteral(token, BigInt(-2147483648), BigInt(2147483647));
     case "int64":

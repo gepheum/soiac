@@ -37,8 +37,10 @@ describe("literals", () => {
     });
 
     it("works with timestamp", () => {
-      expect(valueHasPrimitiveType("'2023-12-25'", "timestamp")).toBe(true);
-      expect(valueHasPrimitiveType('"2023-12-25"', "timestamp")).toBe(true);
+      expect(valueHasPrimitiveType("'2023-12-25Z'", "timestamp")).toBe(true);
+      expect(valueHasPrimitiveType('"2023-12-25T12:00+08:30"', "timestamp"))
+        .toBe(true);
+      expect(valueHasPrimitiveType('"2023-12-25"', "timestamp")).toBe(false);
       expect(valueHasPrimitiveType('"now"', "timestamp")).toBe(false);
     });
 

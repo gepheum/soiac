@@ -1015,12 +1015,7 @@ describe("module set", () => {
                         g: {},
                         b: {},
                       },
-                      type: {
-                        kind: "record",
-                        refToken: {
-                          text: "Color",
-                        },
-                      },
+                      type: "path/to/module:16",
                     },
                   },
                   points: {
@@ -1050,34 +1045,15 @@ describe("module set", () => {
                             },
                             y: {},
                           },
-                          type: {
-                            kind: "record",
-                            refToken: {
-                              text: "Point",
-                            },
-                          },
+                          type: "path/to/module:110",
                         },
                         {},
                         {},
                       ],
-                      type: {
-                        kind: "array",
-                        item: {
-                          refToken: {
-                            text: "Point",
-                          },
-                        },
-                        key: undefined,
-                      },
                     },
                   },
                 },
-                type: {
-                  kind: "record",
-                  refToken: {
-                    text: "Shape",
-                  },
-                },
+                type: "path/to/module:188",
               },
             },
             NULL_SHAPE: {
@@ -1096,12 +1072,7 @@ describe("module set", () => {
                   text: "null",
                 },
                 type: {
-                  kind: "nullable",
-                  value: {
-                    refToken: {
-                      text: "Shape",
-                    },
-                  },
+                  kind: "null",
                 },
               },
             },

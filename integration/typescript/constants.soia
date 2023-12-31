@@ -1,0 +1,31 @@
+import JsonValue from "./enums.soia";
+
+const ONE_CONSTANT: JsonValue = {
+  kind: "array",
+  value: [
+    {
+      kind: "boolean",
+      value: true,
+    },
+    {
+      kind: "number",
+      value: 3.14,
+    },
+    {
+      kind: "string",
+      value: '\
+        foo\
+        bar',
+    },
+    {
+      kind: "object",
+      value: [
+        {
+          name: "foo",
+          value: "NULL",
+        },
+      ],
+    },
+  ],
+};
+
