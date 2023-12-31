@@ -64,7 +64,7 @@ export class Weekday extends $._EnumBase {
   declare switch: <T>(
     switcher:
       | Weekday.Switcher<T>
-      | Weekday.SwitcherWithFallback<T>,
+      | Weekday.SwitcherWithFallback<T>
   ) => T;
 }
 
@@ -278,7 +278,7 @@ export class JsonValue extends $._EnumBase {
   declare switch: <T>(
     switcher:
       | JsonValue.Switcher<T>
-      | JsonValue.SwitcherWithFallback<T>,
+      | JsonValue.SwitcherWithFallback<T>
   ) => T;
 
   static readonly Pair = JsonValue_Pair;
@@ -305,12 +305,13 @@ export declare namespace JsonValue {
     | { kind: "array"; value: ReadonlyArray<JsonValue.Copyable> }
     | { kind: "object"; value: ReadonlyArray<JsonValue.Pair.Copyable> };
 
-  export type CopyableFor<C extends ValueKind> = C extends "boolean" ? boolean
-    : C extends "number" ? number
-    : C extends "string" ? string
-    : C extends "array" ? ReadonlyArray<JsonValue.Copyable>
-    : C extends "object" ? ReadonlyArray<JsonValue.Pair.Copyable>
-    : never;
+  export type CopyableFor<C extends ValueKind> =
+    C extends "boolean" ? boolean :
+    C extends "number" ? number :
+    C extends "string" ? string :
+    C extends "array" ? ReadonlyArray<JsonValue.Copyable> :
+    C extends "object" ? ReadonlyArray<JsonValue.Pair.Copyable> :
+    never;
 
   export type Value =
     | boolean
@@ -320,12 +321,13 @@ export declare namespace JsonValue {
     | ReadonlyArray<JsonValue.Pair>
     | undefined;
 
-  export type ValueFor<C extends ValueKind> = C extends "boolean" ? boolean
-    : C extends "number" ? number
-    : C extends "string" ? string
-    : C extends "array" ? ReadonlyArray<JsonValue>
-    : C extends "object" ? ReadonlyArray<JsonValue.Pair>
-    : never;
+  export type ValueFor<C extends ValueKind> =
+    C extends "boolean" ? boolean :
+    C extends "number" ? number :
+    C extends "string" ? string :
+    C extends "array" ? ReadonlyArray<JsonValue> :
+    C extends "object" ? ReadonlyArray<JsonValue.Pair> :
+    never;
 
   export interface Switcher<T> {
     "NULL": () => T;
@@ -350,13 +352,10 @@ export declare namespace JsonValue {
 // Exported as 'EnumWithRecursiveDefault.S.Builder'
 class EnumWithRecursiveDefault_S_Mutable extends $._MutableBase {
   constructor(
-    copyable: EnumWithRecursiveDefault.S.Copyable =
-      EnumWithRecursiveDefault_S.DEFAULT,
+    copyable: EnumWithRecursiveDefault.S.Copyable = EnumWithRecursiveDefault_S.DEFAULT,
   ) {
     super();
-    this.f = EnumWithRecursiveDefault.fromCopyable(
-      copyable.f || EnumWithRecursiveDefault.DEFAULT,
-    );
+    this.f = EnumWithRecursiveDefault.fromCopyable(copyable.f || EnumWithRecursiveDefault.DEFAULT);
     Object.seal(this);
   }
 
@@ -368,9 +367,7 @@ class EnumWithRecursiveDefault_S_Mutable extends $._MutableBase {
 
   declare toMutable: () => this;
 
-  declare readonly [$._COPYABLE]:
-    | EnumWithRecursiveDefault.S.Copyable
-    | undefined;
+  declare readonly [$._COPYABLE]: EnumWithRecursiveDefault.S.Copyable | undefined;
 }
 
 // Exported as 'EnumWithRecursiveDefault.S'
@@ -406,9 +403,7 @@ class EnumWithRecursiveDefault_S extends $._FrozenBase {
   static readonly Mutable = EnumWithRecursiveDefault_S_Mutable;
 
   declare private FROZEN: undefined;
-  declare readonly [$._COPYABLE]:
-    | EnumWithRecursiveDefault.S.Copyable
-    | undefined;
+  declare readonly [$._COPYABLE]: EnumWithRecursiveDefault.S.Copyable | undefined;
 
   static readonly SERIALIZER = $._newStructSerializer(this.DEFAULT);
 }
@@ -434,9 +429,7 @@ export class EnumWithRecursiveDefault extends $._EnumBase {
     let v: EnumWithRecursiveDefault.Value;
     switch (kind) {
       case "f": {
-        v = EnumWithRecursiveDefault_S.create(
-          value as EnumWithRecursiveDefault.CopyableFor<"f">,
-        );
+        v = EnumWithRecursiveDefault_S.create(value as EnumWithRecursiveDefault.CopyableFor<"f">);
         break;
       }
       default: {
@@ -482,7 +475,7 @@ export class EnumWithRecursiveDefault extends $._EnumBase {
   declare switch: <T>(
     switcher:
       | EnumWithRecursiveDefault.Switcher<T>
-      | EnumWithRecursiveDefault.SwitcherWithFallback<T>,
+      | EnumWithRecursiveDefault.SwitcherWithFallback<T>
   ) => T;
 
   static readonly S = EnumWithRecursiveDefault_S;
@@ -499,15 +492,15 @@ export declare namespace EnumWithRecursiveDefault {
     | EnumWithRecursiveDefault
     | { kind: "f"; value: EnumWithRecursiveDefault.S.Copyable };
 
-  export type CopyableFor<C extends ValueKind> = C extends "f"
-    ? EnumWithRecursiveDefault.S.Copyable
-    : never;
+  export type CopyableFor<C extends ValueKind> =
+    C extends "f" ? EnumWithRecursiveDefault.S.Copyable :
+    never;
 
   export type Value = EnumWithRecursiveDefault.S | undefined;
 
-  export type ValueFor<C extends ValueKind> = C extends "f"
-    ? EnumWithRecursiveDefault.S
-    : never;
+  export type ValueFor<C extends ValueKind> =
+    C extends "f" ? EnumWithRecursiveDefault.S :
+    never;
 
   export interface Switcher<T> {
     "f": (v: EnumWithRecursiveDefault.S) => T;
@@ -565,13 +558,8 @@ $._initEnumSerializer(
   undefined,
   [
     ["NULL", 0, JsonValue.NULL],
-    ["boolean", 1, $.primitiveSerializer("bool")],
-    ["number", 2, $.primitiveSerializer("float64")],
-    ["string", 3, $.primitiveSerializer("string")],
-    ["array", 4, $.arraySerializer(JsonValue.SERIALIZER)],
-    ["object", 5, $.arraySerializer(JsonValue_Pair.SERIALIZER)],
-  ],
-  [],
+    ["boolean", 1, $.primitiveSerializer("bool")],["number", 2, $.primitiveSerializer("float64")],["string", 3, $.primitiveSerializer("string")],["array", 4, $.arraySerializer(JsonValue.SERIALIZER)],["object", 5, $.arraySerializer(JsonValue_Pair.SERIALIZER)],],
+    [],
 );
 
 $._initStructSerializer(
@@ -593,7 +581,7 @@ $._initEnumSerializer(
   _MODULE_PATH,
   undefined,
   [
-    ["f", 0, EnumWithRecursiveDefault_S.SERIALIZER],
-  ],
-  [],
+    ["f", 0, EnumWithRecursiveDefault_S.SERIALIZER],],
+    [],
 );
+

@@ -29,3 +29,5 @@ const ONE_CONSTANT: JsonValue = {
   ],
 };
 
+const ONE_TIMESTAMP: timestamp = "2023-12-31T00:53:48+00:00";
+

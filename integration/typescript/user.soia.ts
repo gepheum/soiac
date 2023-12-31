@@ -204,7 +204,7 @@ export class UserProfiles extends $._FrozenBase {
   get profilesMap(): ReadonlyMap<string, UserProfile> {
     return this.__maps.profiles || (
       this.__maps.profiles = new Map(
-        this.profiles.map((v) => [v.user.userId.toString(), v]),
+        this.profiles.map((v) => [v.user.userId.toString(), v])
       )
     );
   }
@@ -282,3 +282,4 @@ $._initStructSerializer(
   ],
   [],
 );
+

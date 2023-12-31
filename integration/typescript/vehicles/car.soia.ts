@@ -108,3 +108,4 @@ $._initStructSerializer(
   ],
   [],
 );
+

@@ -16,12 +16,10 @@ export const MY_PROCEDURE: $.Procedure<Point, JsonValue> = {
   responseSerializer: JsonValue.SERIALIZER,
 };
 
-export const WITH_EXPLICIT_NUMBER: $.Procedure<
-  ReadonlyArray<Point>,
-  JsonValue | null
-> = {
+export const WITH_EXPLICIT_NUMBER: $.Procedure<ReadonlyArray<Point>, JsonValue | null> = {
   name: "WithExplicitNumber",
   number: 3,
   requestSerializer: $.arraySerializer(Point.SERIALIZER),
   responseSerializer: $.nullableSerializer(JsonValue.SERIALIZER),
 };
+

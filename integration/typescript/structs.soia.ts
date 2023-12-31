@@ -541,9 +541,7 @@ class Items_Mutable extends $._MutableBase {
   }
 
   get mutableArrayWithWrapperKey(): Array<Item.OrMutable> {
-    return this.arrayWithWrapperKey = $._toMutableArray(
-      this.arrayWithWrapperKey,
-    );
+    return this.arrayWithWrapperKey = $._toMutableArray(this.arrayWithWrapperKey);
   }
 
   get mutableArrayWithEnumKey(): Array<Item.OrMutable> {
@@ -593,7 +591,7 @@ export class Items extends $._FrozenBase {
   get arrayWithBoolKeyMap(): ReadonlyMap<boolean, Item> {
     return this.__maps.arrayWithBoolKey || (
       this.__maps.arrayWithBoolKey = new Map(
-        this.arrayWithBoolKey.map((v) => [v.bool, v]),
+        this.arrayWithBoolKey.map((v) => [v.bool, v])
       )
     );
   }
@@ -601,7 +599,7 @@ export class Items extends $._FrozenBase {
   get arrayWithStringKeyMap(): ReadonlyMap<string, Item> {
     return this.__maps.arrayWithStringKey || (
       this.__maps.arrayWithStringKey = new Map(
-        this.arrayWithStringKey.map((v) => [v.string, v]),
+        this.arrayWithStringKey.map((v) => [v.string, v])
       )
     );
   }
@@ -609,7 +607,7 @@ export class Items extends $._FrozenBase {
   get arrayWithInt32KeyMap(): ReadonlyMap<number, Item> {
     return this.__maps.arrayWithInt32Key || (
       this.__maps.arrayWithInt32Key = new Map(
-        this.arrayWithInt32Key.map((v) => [v.int32, v]),
+        this.arrayWithInt32Key.map((v) => [v.int32, v])
       )
     );
   }
@@ -617,7 +615,7 @@ export class Items extends $._FrozenBase {
   get arrayWithInt64KeyMap(): ReadonlyMap<string, Item> {
     return this.__maps.arrayWithInt64Key || (
       this.__maps.arrayWithInt64Key = new Map(
-        this.arrayWithInt64Key.map((v) => [v.int64.toString(), v]),
+        this.arrayWithInt64Key.map((v) => [v.int64.toString(), v])
       )
     );
   }
@@ -625,7 +623,7 @@ export class Items extends $._FrozenBase {
   get arrayWithWrapperKeyMap(): ReadonlyMap<string, Item> {
     return this.__maps.arrayWithWrapperKey || (
       this.__maps.arrayWithWrapperKey = new Map(
-        this.arrayWithWrapperKey.map((v) => [v.user.id, v]),
+        this.arrayWithWrapperKey.map((v) => [v.user.id, v])
       )
     );
   }
@@ -633,7 +631,7 @@ export class Items extends $._FrozenBase {
   get arrayWithEnumKeyMap(): ReadonlyMap<Weekday.Kind, Item> {
     return this.__maps.arrayWithEnumKey || (
       this.__maps.arrayWithEnumKey = new Map(
-        this.arrayWithEnumKey.map((v) => [v.weekday.kind, v]),
+        this.arrayWithEnumKey.map((v) => [v.weekday.kind, v])
       )
     );
   }
@@ -924,12 +922,10 @@ function initFoo_Bar(
   copyable: Foo.Bar.Copyable,
 ): void {
   target.bar = copyable.bar ?? null;
-  target.foos = copyable.foos
-    ? $._toFrozenArray(
-      copyable.foos,
-      (e) => e ? Foo.create(e) : null,
-    )
-    : null;
+  target.foos = copyable.foos ? $._toFrozenArray(
+    copyable.foos,
+    (e) => e ? Foo.create(e) : null,
+  ) : null;
 }
 
 export declare namespace Foo.Bar {
@@ -1066,18 +1062,14 @@ function initFoo(
   target: Record<string, unknown>,
   copyable: Foo.Copyable,
 ): void {
-  target.bars = copyable.bars
-    ? $._toFrozenArray(
-      copyable.bars,
-      (e) => Foo_Bar.create(e),
-    )
-    : null;
-  target.zoos = copyable.zoos
-    ? $._toFrozenArray(
-      copyable.zoos,
-      (e) => e ? Foo_Zoo.create(e) : null,
-    )
-    : null;
+  target.bars = copyable.bars ? $._toFrozenArray(
+    copyable.bars,
+    (e) => Foo_Bar.create(e),
+  ) : null;
+  target.zoos = copyable.zoos ? $._toFrozenArray(
+    copyable.zoos,
+    (e) => e ? Foo_Zoo.create(e) : null,
+  ) : null;
 }
 
 export declare namespace Foo {
@@ -1100,14 +1092,11 @@ export declare namespace Foo {
 // Exported as 'NameCollision.Foo.Foo_.Foo__.Builder'
 class NameCollision_Foo_Foo__Foo___Mutable extends $._MutableBase {
   constructor(
-    copyable: NameCollision.Foo.Foo_.Foo__.Copyable =
-      NameCollision_Foo_Foo__Foo__.DEFAULT,
+    copyable: NameCollision.Foo.Foo_.Foo__.Copyable = NameCollision_Foo_Foo__Foo__.DEFAULT,
   ) {
     super();
     initNameCollision_Foo_Foo__Foo__(this as Record<string, unknown>, copyable);
-    this.topLevelFoo = NameCollision_Foo.create(
-      copyable.topLevelFoo || NameCollision_Foo.DEFAULT,
-    );
+    this.topLevelFoo = NameCollision_Foo.create(copyable.topLevelFoo || NameCollision_Foo.DEFAULT);
     Object.seal(this);
   }
 
@@ -1120,9 +1109,7 @@ class NameCollision_Foo_Foo__Foo___Mutable extends $._MutableBase {
 
   declare toMutable: () => this;
 
-  declare readonly [$._COPYABLE]:
-    | NameCollision.Foo.Foo_.Foo__.Copyable
-    | undefined;
+  declare readonly [$._COPYABLE]: NameCollision.Foo.Foo_.Foo__.Copyable | undefined;
 }
 
 // Exported as 'NameCollision.Foo.Foo_.Foo__'
@@ -1160,9 +1147,7 @@ class NameCollision_Foo_Foo__Foo__ extends $._FrozenBase {
   static readonly Mutable = NameCollision_Foo_Foo__Foo___Mutable;
 
   declare private FROZEN: undefined;
-  declare readonly [$._COPYABLE]:
-    | NameCollision.Foo.Foo_.Foo__.Copyable
-    | undefined;
+  declare readonly [$._COPYABLE]: NameCollision.Foo.Foo_.Foo__.Copyable | undefined;
 
   static readonly SERIALIZER = $._newStructSerializer(this.DEFAULT);
 }
@@ -1247,9 +1232,7 @@ function initNameCollision_Foo_Foo_(
   target: Record<string, unknown>,
   copyable: NameCollision.Foo.Foo_.Copyable,
 ): void {
-  target.foo = NameCollision_Foo_Foo__Foo__.create(
-    copyable.foo || NameCollision_Foo_Foo__Foo__.DEFAULT,
-  );
+  target.foo = NameCollision_Foo_Foo__Foo__.create(copyable.foo || NameCollision_Foo_Foo__Foo__.DEFAULT);
 }
 
 export declare namespace NameCollision.Foo.Foo_ {
@@ -1326,9 +1309,7 @@ function initNameCollision_Foo(
   target: Record<string, unknown>,
   copyable: NameCollision.Foo.Copyable,
 ): void {
-  target.foo = NameCollision_Foo_Foo_.create(
-    copyable.foo || NameCollision_Foo_Foo_.DEFAULT,
-  );
+  target.foo = NameCollision_Foo_Foo_.create(copyable.foo || NameCollision_Foo_Foo_.DEFAULT);
 }
 
 export declare namespace NameCollision.Foo {
@@ -1361,9 +1342,7 @@ class NameCollision_Array_Array__Mutable extends $._MutableBase {
 
   declare toMutable: () => this;
 
-  declare readonly [$._COPYABLE]:
-    | NameCollision.Array.Array_.Copyable
-    | undefined;
+  declare readonly [$._COPYABLE]: NameCollision.Array.Array_.Copyable | undefined;
 }
 
 // Exported as 'NameCollision.Array.Array_'
@@ -1387,9 +1366,7 @@ class NameCollision_Array_Array_ extends $._FrozenBase {
   static readonly Mutable = NameCollision_Array_Array__Mutable;
 
   declare private FROZEN: undefined;
-  declare readonly [$._COPYABLE]:
-    | NameCollision.Array.Array_.Copyable
-    | undefined;
+  declare readonly [$._COPYABLE]: NameCollision.Array.Array_.Copyable | undefined;
 
   static readonly SERIALIZER = $._newStructSerializer(this.DEFAULT);
 }
@@ -1419,9 +1396,7 @@ class NameCollision_Array_Mutable extends $._MutableBase {
 
   get mutableArray(): NameCollision.Array.Array_.Mutable {
     const v = this.array;
-    return v instanceof NameCollision_Array_Array_.Mutable
-      ? v
-      : (this.array = v.toMutable());
+    return v instanceof NameCollision_Array_Array_.Mutable ? v : (this.array = v.toMutable());
   }
 
   toFrozen(): NameCollision.Array {
@@ -1471,9 +1446,7 @@ function initNameCollision_Array(
   target: Record<string, unknown>,
   copyable: NameCollision.Array.Copyable,
 ): void {
-  target.array = NameCollision_Array_Array_.create(
-    copyable.array || NameCollision_Array_Array_.DEFAULT,
-  );
+  target.array = NameCollision_Array_Array_.create(copyable.array || NameCollision_Array_Array_.DEFAULT);
 }
 
 export declare namespace NameCollision.Array {
@@ -1549,8 +1522,7 @@ export declare namespace NameCollision.Value {
 // Exported as 'NameCollision.Enum.Mutable_.Builder'
 class NameCollision_Enum_Mutable__Mutable extends $._MutableBase {
   constructor(
-    _: NameCollision.Enum.Mutable_.Copyable =
-      NameCollision_Enum_Mutable_.DEFAULT,
+    _: NameCollision.Enum.Mutable_.Copyable = NameCollision_Enum_Mutable_.DEFAULT,
   ) {
     super();
     Object.seal(this);
@@ -1562,9 +1534,7 @@ class NameCollision_Enum_Mutable__Mutable extends $._MutableBase {
 
   declare toMutable: () => this;
 
-  declare readonly [$._COPYABLE]:
-    | NameCollision.Enum.Mutable_.Copyable
-    | undefined;
+  declare readonly [$._COPYABLE]: NameCollision.Enum.Mutable_.Copyable | undefined;
 }
 
 // Exported as 'NameCollision.Enum.Mutable_'
@@ -1588,9 +1558,7 @@ class NameCollision_Enum_Mutable_ extends $._FrozenBase {
   static readonly Mutable = NameCollision_Enum_Mutable__Mutable;
 
   declare private FROZEN: undefined;
-  declare readonly [$._COPYABLE]:
-    | NameCollision.Enum.Mutable_.Copyable
-    | undefined;
+  declare readonly [$._COPYABLE]: NameCollision.Enum.Mutable_.Copyable | undefined;
 
   static readonly SERIALIZER = $._newStructSerializer(this.DEFAULT);
 }
@@ -1617,9 +1585,7 @@ class NameCollision_Enum extends $._EnumBase {
     let v: NameCollision.Enum.Value;
     switch (kind) {
       case "mutable": {
-        v = NameCollision_Enum_Mutable_.create(
-          value as NameCollision.Enum.CopyableFor<"mutable">,
-        );
+        v = NameCollision_Enum_Mutable_.create(value as NameCollision.Enum.CopyableFor<"mutable">);
         break;
       }
       default: {
@@ -1670,7 +1636,7 @@ class NameCollision_Enum extends $._EnumBase {
   declare switch: <T>(
     switcher:
       | NameCollision.Enum.Switcher<T>
-      | NameCollision.Enum.SwitcherWithFallback<T>,
+      | NameCollision.Enum.SwitcherWithFallback<T>
   ) => T;
 
   static readonly Mutable_ = NameCollision_Enum_Mutable_;
@@ -1688,15 +1654,15 @@ export declare namespace NameCollision.Enum {
     | "DEFAULT"
     | { kind: "mutable"; value: NameCollision.Enum.Mutable_.Copyable };
 
-  export type CopyableFor<C extends ValueKind> = C extends "mutable"
-    ? NameCollision.Enum.Mutable_.Copyable
-    : never;
+  export type CopyableFor<C extends ValueKind> =
+    C extends "mutable" ? NameCollision.Enum.Mutable_.Copyable :
+    never;
 
   export type Value = NameCollision.Enum.Mutable_ | undefined;
 
-  export type ValueFor<C extends ValueKind> = C extends "mutable"
-    ? NameCollision.Enum.Mutable_
-    : never;
+  export type ValueFor<C extends ValueKind> =
+    C extends "mutable" ? NameCollision.Enum.Mutable_ :
+    never;
 
   export interface Switcher<T> {
     "DEFAULT": () => T;
@@ -1729,16 +1695,12 @@ class NameCollision_Mutable extends $._MutableBase {
 
   get mutableFoo(): NameCollision.Foo.Mutable {
     const v = this.foo;
-    return v instanceof NameCollision_Foo.Mutable
-      ? v
-      : (this.foo = v.toMutable());
+    return v instanceof NameCollision_Foo.Mutable ? v : (this.foo = v.toMutable());
   }
 
   get mutableArray(): NameCollision.Array.Mutable {
     const v = this.array;
-    return v instanceof NameCollision_Array.Mutable
-      ? v
-      : (this.array = v.toMutable());
+    return v instanceof NameCollision_Array.Mutable ? v : (this.array = v.toMutable());
   }
 
   toFrozen(): NameCollision {
@@ -1791,12 +1753,8 @@ function initNameCollision(
   target: Record<string, unknown>,
   copyable: NameCollision.Copyable,
 ): void {
-  target.foo = NameCollision_Foo.create(
-    copyable.foo || NameCollision_Foo.DEFAULT,
-  );
-  target.array = NameCollision_Array.create(
-    copyable.array || NameCollision_Array.DEFAULT,
-  );
+  target.foo = NameCollision_Foo.create(copyable.foo || NameCollision_Foo.DEFAULT);
+  target.array = NameCollision_Array.create(copyable.array || NameCollision_Array.DEFAULT);
 }
 
 export declare namespace NameCollision {
@@ -1959,12 +1917,10 @@ function initRecB(
   copyable: RecB.Copyable,
 ): void {
   target.a = RecA.create(copyable.a || RecA.DEFAULT);
-  target.aList = copyable.aList
-    ? $._toFrozenArray(
-      copyable.aList,
-      (e) => e ? RecA.create(e) : null,
-    )
-    : null;
+  target.aList = copyable.aList ? $._toFrozenArray(
+    copyable.aList,
+    (e) => e ? RecA.create(e) : null,
+  ) : null;
 }
 
 export declare namespace RecB {
@@ -2405,42 +2361,12 @@ $._initStructSerializer(
   _MODULE_PATH,
   undefined,
   [
-    [
-      "array_with_bool_key",
-      "arrayWithBoolKey",
-      0,
-      $.arraySerializer(Item.SERIALIZER),
-    ],
-    [
-      "array_with_string_key",
-      "arrayWithStringKey",
-      1,
-      $.arraySerializer(Item.SERIALIZER),
-    ],
-    [
-      "array_with_int32_key",
-      "arrayWithInt32Key",
-      2,
-      $.arraySerializer(Item.SERIALIZER),
-    ],
-    [
-      "array_with_int64_key",
-      "arrayWithInt64Key",
-      3,
-      $.arraySerializer(Item.SERIALIZER),
-    ],
-    [
-      "array_with_wrapper_key",
-      "arrayWithWrapperKey",
-      4,
-      $.arraySerializer(Item.SERIALIZER),
-    ],
-    [
-      "array_with_enum_key",
-      "arrayWithEnumKey",
-      5,
-      $.arraySerializer(Item.SERIALIZER),
-    ],
+    ["array_with_bool_key", "arrayWithBoolKey", 0, $.arraySerializer(Item.SERIALIZER)],
+    ["array_with_string_key", "arrayWithStringKey", 1, $.arraySerializer(Item.SERIALIZER)],
+    ["array_with_int32_key", "arrayWithInt32Key", 2, $.arraySerializer(Item.SERIALIZER)],
+    ["array_with_int64_key", "arrayWithInt64Key", 3, $.arraySerializer(Item.SERIALIZER)],
+    ["array_with_wrapper_key", "arrayWithWrapperKey", 4, $.arraySerializer(Item.SERIALIZER)],
+    ["array_with_enum_key", "arrayWithEnumKey", 5, $.arraySerializer(Item.SERIALIZER)],
   ],
   [],
 );
@@ -2478,14 +2404,7 @@ $._initStructSerializer(
   Foo.SERIALIZER.typeDescriptor,
   [
     ["bar", "bar", 0, $.nullableSerializer($.primitiveSerializer("string"))],
-    [
-      "foos",
-      "foos",
-      1,
-      $.nullableSerializer(
-        $.arraySerializer($.nullableSerializer(Foo.SERIALIZER)),
-      ),
-    ],
+    ["foos", "foos", 1, $.nullableSerializer($.arraySerializer($.nullableSerializer(Foo.SERIALIZER)))],
   ],
   [],
 );
@@ -2496,7 +2415,8 @@ $._initStructSerializer(
   "Foo.Zoo",
   _MODULE_PATH,
   Foo.SERIALIZER.typeDescriptor,
-  [],
+  [
+  ],
   [],
 );
 
@@ -2507,20 +2427,8 @@ $._initStructSerializer(
   _MODULE_PATH,
   undefined,
   [
-    [
-      "bars",
-      "bars",
-      0,
-      $.nullableSerializer($.arraySerializer(Foo_Bar.SERIALIZER)),
-    ],
-    [
-      "zoos",
-      "zoos",
-      1,
-      $.nullableSerializer(
-        $.arraySerializer($.nullableSerializer(Foo_Zoo.SERIALIZER)),
-      ),
-    ],
+    ["bars", "bars", 0, $.nullableSerializer($.arraySerializer(Foo_Bar.SERIALIZER))],
+    ["zoos", "zoos", 1, $.nullableSerializer($.arraySerializer($.nullableSerializer(Foo_Zoo.SERIALIZER)))],
   ],
   [],
 );
@@ -2568,7 +2476,8 @@ $._initStructSerializer(
   "NameCollision.Array.Array",
   _MODULE_PATH,
   NameCollision_Array.SERIALIZER.typeDescriptor,
-  [],
+  [
+  ],
   [],
 );
 
@@ -2590,7 +2499,8 @@ $._initStructSerializer(
   "NameCollision.Value",
   _MODULE_PATH,
   NameCollision.SERIALIZER.typeDescriptor,
-  [],
+  [
+  ],
   [],
 );
 
@@ -2600,7 +2510,8 @@ $._initStructSerializer(
   "NameCollision.Enum.Mutable",
   _MODULE_PATH,
   NameCollision_Enum.SERIALIZER.typeDescriptor,
-  [],
+  [
+  ],
   [],
 );
 
@@ -2612,9 +2523,8 @@ $._initEnumSerializer(
   NameCollision.SERIALIZER.typeDescriptor,
   [
     ["DEFAULT", 0, NameCollision_Enum.DEFAULT_],
-    ["mutable", 1, NameCollision_Enum_Mutable_.SERIALIZER],
-  ],
-  [],
+    ["mutable", 1, NameCollision_Enum_Mutable_.SERIALIZER],],
+    [],
 );
 
 $._initStructSerializer(
@@ -2651,14 +2561,7 @@ $._initStructSerializer(
   undefined,
   [
     ["a", "a", 0, RecA.SERIALIZER],
-    [
-      "a_list",
-      "aList",
-      1,
-      $.nullableSerializer(
-        $.arraySerializer($.nullableSerializer(RecA.SERIALIZER)),
-      ),
-    ],
+    ["a_list", "aList", 1, $.nullableSerializer($.arraySerializer($.nullableSerializer(RecA.SERIALIZER)))],
   ],
   [],
 );
@@ -2669,7 +2572,8 @@ $._initStructSerializer(
   "Name.Name1",
   _MODULE_PATH,
   Name.SERIALIZER.typeDescriptor,
-  [],
+  [
+  ],
   [],
 );
 
@@ -2703,7 +2607,8 @@ $._initStructSerializer(
   "Name.Name",
   _MODULE_PATH,
   Name.SERIALIZER.typeDescriptor,
-  [],
+  [
+  ],
   [],
 );
 
@@ -2713,6 +2618,8 @@ $._initStructSerializer(
   "Name",
   _MODULE_PATH,
   undefined,
-  [],
+  [
+  ],
   [],
 );
+
