@@ -102,8 +102,8 @@ export function tokenizeModule(
       // Check that the string doesn't contain lone surrogates.
       // Seems like we can't use isWellFormed in Deno:
       //   https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/isWellFormed
+      const unquoted = unquoteAndUnescape(stringLiteral);
       try {
-        const unquoted = unquoteAndUnescape(stringLiteral);
         encodeURIComponent(unquoted);
       } catch {
         errors.push({

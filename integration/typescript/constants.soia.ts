@@ -43,3 +43,5 @@ export const ONE_CONSTANT = JsonValue.fromCopyable({
 
 export const ONE_TIMESTAMP = $.Timestamp.parse("2023-12-31T00:53:48+00:00");
 
+export const ONE_SINGLE_QUOTED_STRING = "\"Foo\"";
+

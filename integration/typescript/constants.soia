@@ -31,3 +31,4 @@ const ONE_CONSTANT: JsonValue = {
 
 const ONE_TIMESTAMP: timestamp = "2023-12-31T00:53:48+00:00";
 
+const ONE_SINGLE_QUOTED_STRING: string = '"Foo"';
