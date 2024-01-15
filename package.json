@@ -27,14 +27,13 @@
   },
   "homepage": "https://github.com/gepheum/soia-typescript#readme",
   "dependencies": {
-    "glob": "^1.1.0",
+    "glob": "^10.3.10",
     "soia": "^1.0.12",
     "watcher": "^2.3.0",
     "yaml": "^2.3.4",
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "^20.6.0",
     "buckwheat": "^1.1.2",
