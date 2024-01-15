@@ -1,17 +1,17 @@
-import {
+import type {
   Constant,
   LiteralValue,
+  Method,
   Module,
   ObjectValue,
-  Procedure,
   RecordKey,
   RecordLocation,
   ResolvedType,
   Value,
-} from "../module.ts";
-import { ModuleSet } from "../module_set.ts";
-import { CodeGenerator } from "../code_generator.ts";
-import { makeTransformExpression } from "./typescript/expression_maker.ts";
+} from "../module.js";
+import { ModuleSet } from "../module_set.js";
+import type { CodeGenerator } from "../code_generator.js";
+import { makeTransformExpression } from "./typescript/expression_maker.js";
 import {
   createRecordInfo,
   EnumInfo,
@@ -21,17 +21,18 @@ import {
   StructField,
   structFieldNameToProperty,
   StructInfo,
-} from "./typescript/record_info.ts";
-import { TsType } from "./typescript/ts_type.ts";
-import { TypeSpeller } from "./typescript/type_speller.ts";
-import * as paths from "https://deno.land/std@0.198.0/path/mod.ts";
-import * as casing from "../casing.ts";
+} from "./typescript/record_info.js";
+import { TsType } from "./typescript/ts_type.js";
+import { TypeSpeller } from "./typescript/type_speller.js";
+import * as paths from "path";
+import * as casing from "../casing.js";
 import { z } from "zod";
-import { unquoteAndUnescape } from "../literals.ts";
+import { unquoteAndUnescape } from "../literals.js";
 
 export class TypescriptCodeGenerator implements CodeGenerator<undefined> {
   readonly id = "typescript";
   readonly configType = z.undefined();
+  readonly version = "1.0.0";
 
   generateCode(modules: ModuleSet): CodeGenerator.Output {
     const outputFiles: CodeGenerator.OutputFile[] = [];
@@ -71,13 +72,13 @@ class TsModuleCodeGenerator {
       this.defineClassesAndNamespaceForRecord(recordLocation);
     }
 
-    if (this.inModule.procedures.length) {
+    if (this.inModule.methods.length) {
       this.push(`
         ${TsModuleCodeGenerator.SEPARATOR}
-        // Procedures
+        // Methods
         ${TsModuleCodeGenerator.SEPARATOR}\n\n`);
-      for (const procedure of this.inModule.procedures) {
-        this.defineProcedure(procedure);
+      for (const method of this.inModule.methods) {
+        this.defineMethod(method);
       }
     }
 
@@ -115,7 +116,6 @@ class TsModuleCodeGenerator {
       if (!tsPath.startsWith(".")) {
         tsPath = `./${tsPath}`;
       }
-      tsPath = `${tsPath}.ts`;
       if (importedNames.kind === "all") {
         const alias = importedNames.alias;
         this.push(`import * as x_${alias} from "${tsPath}";\n`);
@@ -737,17 +737,17 @@ class TsModuleCodeGenerator {
       }\n\n`);
   }
 
-  private defineProcedure(procedure: Procedure): void {
+  private defineMethod(method: Method): void {
     const { typeSpeller } = this;
-    const { number, requestType, responseType } = procedure;
-    const name = procedure.name.text;
+    const { number, requestType, responseType } = method;
+    const name = method.name.text;
     const varName = casing.convert(name, "UpperCamel", "UPPER_UNDERSCORE");
     const reqTsType = typeSpeller.getTsType(requestType!, "frozen", false);
     const respTsType = typeSpeller.getTsType(responseType!, "frozen", false);
     const reqSerializer = this.getSerializerExpr(requestType!);
     const respSerializer = this.getSerializerExpr(responseType!);
     this.push(`
-        export const ${varName}: $.Procedure<${reqTsType}, ${respTsType}> = {
+        export const ${varName}: $.Method<${reqTsType}, ${respTsType}> = {
           name: "${name}",
           number: ${number},
           requestSerializer: ${reqSerializer},
@@ -895,9 +895,9 @@ class TsModuleCodeGenerator {
       }
       case "enum": {
         this.push(`${className.type}.fromCopyable({\n`);
-        this.push(`kind: ${value.entries["kind"].value.token.text},\n`);
+        this.push(`kind: ${value.entries["kind"]!.value.token.text},\n`);
         this.push("value: ");
-        this.spellValue(value.entries["value"].value);
+        this.spellValue(value.entries["value"]!.value);
         this.push(",\n})");
         break;
       }
@@ -931,7 +931,6 @@ class TsModuleCodeGenerator {
       case "bytes":
         return `$.ByteString.fromBase16(${text.toUpperCase()})`;
     }
-    throw new TypeError(`${type}`);
   }
 
   private static readonly SEPARATOR = `// ${"-".repeat(80 - "// ".length)}`;
@@ -1027,15 +1026,16 @@ class TsModuleCodeGenerator {
 
     return result
       // Remove spaces enclosed within round bracket if that's all there is.
-      .replaceAll(/\{\s+\}/g, "{}")
+      .replace(/\{\s+\}/g, "{}")
       // Remove spaces enclosed within square bracket if that's all there is.
-      .replaceAll(/\(\s+\)/g, "()")
+      .replace(/\(\s+\)/g, "()")
       // Remove empty line following an open square bracket.
-      .replaceAll(/(\{\n *)\n/g, "$1")
+      .replace(/(\{\n *)\n/g, "$1")
       // Remove empty line preceding a closed square bracket.
-      .replaceAll(/\n(\n *\})/g, "$1")
+      .replace(/\n(\n *\})/g, "$1")
       // Coalesce consecutive empty lines.
-      .replaceAll(/\n\n\n+/g, "\n\n");
+      .replace(/\n\n\n+/g, "\n\n")
+      .replace(/\n\n$/g, "\n");
   }
 
   private readonly typeSpeller: TypeSpeller;

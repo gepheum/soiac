@@ -1,10 +1,10 @@
-import { FileReader } from "./io.ts";
+import { FileReader } from "./io.js";
 import {
   isStringLiteral,
   unquoteAndUnescape,
   valueHasPrimitiveType,
-} from "./literals.ts";
-import {
+} from "./literals.js";
+import type {
   Error,
   ErrorSink,
   Field,
@@ -26,8 +26,8 @@ import {
   UnresolvedRecordRef,
   UnresolvedType,
 } from "./module.ts";
-import { parseModule } from "./parser.ts";
-import { tokenizeModule } from "./tokenizer.ts";
+import { parseModule } from "./parser.js";
+import { tokenizeModule } from "./tokenizer.js";
 import * as paths from "path";
 
 export class ModuleSet {
@@ -157,7 +157,7 @@ export class ModuleSet {
           names: names,
         };
       } else {
-        const alias = importsWithAlias[0].name.text;
+        const alias = importsWithAlias[0]!.name.text;
         pathToImportedNames[path] = {
           kind: "all",
           alias: alias,
@@ -220,23 +220,23 @@ export class ModuleSet {
         this.verifyEnumDefaultConstraint(record.record, errors);
       }
     }
-    // Resolve every request/response type of every procedure in the module.
+    // Resolve every request/response type of every method in the module.
     // Store the result in the Procedure object.
-    for (const procedure of module.procedures) {
+    for (const method of module.methods) {
       {
-        const request = procedure.unresolvedRequestType;
+        const request = method.unresolvedRequestType;
         const requestType = typeResolver.resolve(request, "top-level");
         if (requestType) {
           this.validateArrayKeys(requestType, errors);
-          procedure.requestType = requestType;
+          method.requestType = requestType;
         }
       }
       {
-        const response = procedure.unresolvedResponseType;
+        const response = method.unresolvedResponseType;
         const responseType = typeResolver.resolve(response, "top-level");
         if (responseType) {
           this.validateArrayKeys(responseType, errors);
-          procedure.responseType = responseType;
+          method.responseType = responseType;
         }
       }
     }
@@ -337,20 +337,19 @@ export class ModuleSet {
 
   private referencesImplicitlyNumberedRecord(
     input: ResolvedType,
-  ): ResolvedRecordRef | undefined {
+  ): ResolvedRecordRef | false {
     switch (input.kind) {
       case "array":
         return this.referencesImplicitlyNumberedRecord(input.item);
       case "nullable":
         return this.referencesImplicitlyNumberedRecord(input.value);
       case "primitive":
-        return undefined;
+        return false;
       case "record": {
         const record = this.recordMap.get(input.key)!.record;
-        return record.numbering === "implicit" ? input : undefined;
+        return record.numbering === "implicit" && input;
       }
     }
-    const _: never = input;
   }
 
   /**
@@ -612,7 +611,7 @@ export class ModuleSet {
       this.verifyValueType(enumValue.value, field.type, errors);
       const extraEntries = Object.values(entries);
       if (extraEntries.length !== 0) {
-        const extraEntry = extraEntries[0];
+        const extraEntry = extraEntries[0]!;
         errors.push({
           token: extraEntry.name,
           message: "extraneous entry",
@@ -725,7 +724,7 @@ class TypeResolver {
     recordRef: UnresolvedRecordRef,
     recordOrigin: RecordLocation | "top-level",
   ): ResolvedRecordRef | undefined {
-    const firstNamePart = recordRef.nameParts[0];
+    const firstNamePart = recordRef.nameParts[0]!;
 
     // The most nested record/module which contains the first name in the record
     // reference, or the module if the record reference is absolute (starts with
@@ -750,33 +749,32 @@ class TypeResolver {
       start = module;
     }
 
-    const makeNotARecordError = (name: Token): Error => {
-      return {
-        token: name,
-        message: "Does not refer to a struct or an enum",
-      };
-    };
+    const makeNotARecordError = (name: Token): Error => ({
+      token: name,
+      message: "Does not refer to a struct or an enum",
+    });
+    const makeCannotFindNameError = (name: Token): Error => ({
+      token: name,
+      message: `Cannot find name '${name.text}'`,
+    });
 
     let it = start;
     for (let i = 0; i < recordRef.nameParts.length; ++i) {
-      const namePart = recordRef.nameParts[i];
+      const namePart = recordRef.nameParts[i]!;
       const name = namePart.text;
       let newIt = it.nameToDeclaration[name];
       if (newIt === undefined) {
-        errors.push({
-          token: namePart,
-          message: `Cannot find name '${name}'`,
-        });
+        errors.push(makeCannotFindNameError(namePart));
         return undefined;
       } else if (newIt.kind === "record") {
         it = newIt;
       } else if (newIt.kind === "import" || newIt.kind === "import-as") {
-        const cannotReimportError: Error = {
+        const cannotReimportError = () => ({
           token: namePart,
           message: `Cannot reimport imported name '${name}'`,
-        };
+        });
         if (i !== 0) {
-          errors.push(cannotReimportError);
+          errors.push(cannotReimportError());
           return undefined;
         }
         usedImports.add(newIt.name.text);
@@ -793,10 +791,14 @@ class TypeResolver {
         const newModule = newModuleResult.result;
         if (newIt.kind === "import") {
           newIt = newModule.nameToDeclaration[name];
+          if (!newIt) {
+            errors.push(makeCannotFindNameError(namePart));
+            return undefined;
+          }
           if (!newIt || newIt.kind !== "record") {
             this.errors.push(
               newIt.kind === "import" || newIt.kind === "import-as"
-                ? cannotReimportError
+                ? cannotReimportError()
                 : makeNotARecordError(namePart),
             );
             return undefined;
@@ -811,7 +813,7 @@ class TypeResolver {
       }
     }
     if (it.kind !== "record") {
-      const name = recordRef.nameParts[0];
+      const name = recordRef.nameParts[0]!;
       this.errors.push(makeNotARecordError(name));
       return undefined;
     }
@@ -830,14 +832,23 @@ function getModulePath(
   errors: ErrorSink,
 ): string | undefined {
   let modulePath = unquoteAndUnescape(declaration.modulePath.text);
+  if (/\\/.test(modulePath)) {
+    errors.push({
+      token: declaration.modulePath,
+      message: "Replace backslash with slash",
+    });
+    return undefined;
+  }
   if (modulePath.startsWith("./") || modulePath.startsWith("../")) {
     // This is a relative path from the module. Let's transform it into a
     // relative path from root.
     modulePath = paths.join(originModulePath, "..", modulePath);
   }
   // "a/./b/../c" => "a/c"
-  modulePath = paths.normalize(modulePath);
-  if (modulePath.startsWith(`..${paths.SEP}`)) {
+  // Note that `paths.normalize` will use backslashes on Windows.
+  // We don't want that.
+  modulePath = paths.normalize(modulePath).replace(/\\/g, "/");
+  if (modulePath.startsWith(`../`)) {
     errors.push({
       token: declaration.modulePath,
       message: "Module path must point to a file within root",

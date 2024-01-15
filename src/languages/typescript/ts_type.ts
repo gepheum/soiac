@@ -1,13 +1,18 @@
-// A TypeScript type.
+/**
+ * Utility class for spelling out types in TypeScript code.
+ * Every instance represents a TypeScript type.
+ */
 export class TsType {
-  // Creates a single-lined non-union type.
+  /** Creates a single-lined non-union type. */
   static simple(type: string) {
     const multiline = type.includes("\n");
     return new TsType([type], multiline);
   }
 
-  // Returns the generic type:
-  //   'name' + '<' + args[0] + ', ' + args[1] + ... + args[N] + '>'
+  /**
+   * Returns the generic type:
+   *   'name' + '<' + args[0] + ', ' + args[1] + ... + args[N] + '>'
+   */
   static generic(name: string, ...args: readonly TsType[]): TsType {
     const multiline = args.some((u) => u.multiline);
     let type: string;
@@ -20,10 +25,17 @@ export class TsType {
     return new TsType([type], multiline);
   }
 
+  /** A literal value, e.g. `"foobar"` or `3`. */
   static literal(value: string | number) {
     return this.simple(JSON.stringify(value));
   }
 
+  /**
+   * An inline interface as it appears for example in the following declaration:
+   * ```
+   *   const foo: {a: number; b: number} = {a: 10, b: 20};
+   * ```
+   */
   static inlineInterface(nameToType: Readonly<Record<string, TsType>>): TsType {
     const entries = Object.entries(nameToType);
     const multiline = entries.length >= 3 ||
@@ -36,7 +48,10 @@ export class TsType {
     return new TsType([`{ ${entries.map(mapFn).join("; ")} }`], multiline);
   }
 
-  // TODO: comment
+  /**
+   * A conditional type.
+   * @see https://www.typescriptlang.org/docs/handbook/2/conditional-types.html
+   */
   static conditional(
     typeVar: string,
     stringToType: ReadonlyMap<string, TsType>,
@@ -87,9 +102,11 @@ export class TsType {
     return this.typesInUnion.length <= 0;
   }
 
-  // Returns a representation of this type union as valid TypeScript code.
-  // If multiple lines are required, the string starts with EOL and does not end
-  // with EOL.
+  /**
+   * Returns a representation of this type union as valid TypeScript code.
+   * If multiple lines are required, the string starts with EOL and does not end
+   * with EOL.
+   */
   toString(): string {
     if (this.isNever) {
       return "never";

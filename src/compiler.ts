@@ -1,22 +1,26 @@
-// TODO: remove
-//   deno run --allow-read --allow-write src/compiler.ts integration/typescript
+// TODO: clear directory?
 // TODO: print the files that were re-generated each time...
-// TODO: error on unrecognized flags
 // TODO: test that this works if the current directory is not the right one?
 // TODO: start a cycle when the loop starts...
 // TODO: make it possible to specify a glob in soia.yml to specify the soia file patterns for each language? I dunno, maybe.
+// TODO: think about importing node modules....
+// TODO: https://medium.com/@muhammadtaifkhan/watch-file-system-using-nodejs-7d4f9f16ce02#id_token=eyJhbGciOiJSUzI1NiIsImtpZCI6IjkxNDEzY2Y0ZmEwY2I5MmEzYzNmNWEwNTQ1MDkxMzJjNDc2NjA5MzciLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiIyMTYyOTYwMzU4MzQtazFrNnFlMDYwczJ0cDJhMmphbTRsamRjbXMwMHN0dGcuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiIyMTYyOTYwMzU4MzQtazFrNnFlMDYwczJ0cDJhMmphbTRsamRjbXMwMHN0dGcuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMDkzOTM3ODE1NzEyOTA1MzQyODgiLCJlbWFpbCI6ImNsZW1lbnRidGNAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsIm5iZiI6MTcwNDEzMjU0NywibmFtZSI6IkNsw6ltZW50IFJvdXgiLCJwaWN0dXJlIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EvQUNnOG9jSWdRYXQ3S21jazYzRkNQOEY2b0xzaEtFREhBSWFfZDBhQTV3OGpQbTg1NmFKTD1zOTYtYyIsImdpdmVuX25hbWUiOiJDbMOpbWVudCIsImZhbWlseV9uYW1lIjoiUm91eCIsImxvY2FsZSI6ImZyIiwiaWF0IjoxNzA0MTMyODQ3LCJleHAiOjE3MDQxMzY0NDcsImp0aSI6ImY1YzAwOGMyZTk2Njk5ZTk3Y2IzNWI2NjFhMzBkYzc2ZDFjNDI4MDQifQ.GC62G6liVo-7ZPlpHSBA9O_upeWfIfJq8Qww9nsv9okDz6ZcF39TBTfwFtQ7rJy6qUcecP9GlkdT0-Hg_UTbAvgB_8a5wfIpAmNQ0XYZaDGp1ZBJhTcBXD2nLT2tQZxPmLN4vn8mKex_4RmS5_yVFXaYcuxck7CuqCkYJ50nvAxBKcQAPzcTU-0sg2w63U9pHZhoiiSjLbkeAbB6KwQ8yv21HPBcByP2FfaGDYOU8vu1HesqJJKJNLTW6kCWHeCAXlOK8w7nP3rqCm8L-eLiuB7sgwz-0KL0tiJ6nLNNp8hP3J3jvqlyiin3PPjDEaiZtafw-lY-mV_cyYn8mSTe_Q
+// TODO: clear the screen each time
+// TODO: https://stackoverflow.com/questions/5827612/node-js-fs-readdir-recursive-directory-search
 
-import * as flags from "flags";
-import { Error } from "./module.ts";
-import { ModuleSet } from "./module_set.ts";
-import { TypescriptCodeGenerator } from "./languages/typescript.ts";
-import { REAL_FILE_SYSTEM } from "./io.ts";
+import * as process from "process";
+import type { Error } from "./module.js";
+import { ModuleSet } from "./module_set.js";
+import { TypescriptCodeGenerator } from "./languages/typescript.js";
+import { REAL_FILE_SYSTEM } from "./io.js";
 import * as paths from "path";
 import { z } from "zod";
 import * as yaml from "yaml";
-import { CodeGenerator } from "./code_generator.ts";
-import { walk } from "walk";
-import { _COPYABLE } from "https://cdn.jsdelivr.net/npm/soia@^1.0.7/src/soia.ts";
+import { CodeGenerator } from "./code_generator.js";
+import Watcher from "watcher";
+import * as fs from "fs/promises";
+import { glob } from 'glob';
+import { parseArgs } from "node:util";
 
 const BUILTIN_CODE_GENERATORS: readonly CodeGenerator[] = [
   new TypescriptCodeGenerator(),
@@ -55,14 +59,11 @@ async function makeGeneratorBundle(
         // TODO: error
         throw "FOOO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
       }
-      const path = paths.join(Deno.execPath(), "generators", id);
+      const path = paths.join(process.cwd(), "generators", id);
       try {
-        modulePath = Deno.readTextFileSync(path);
+        modulePath = await fs.readFile(path, "utf-8");
       } catch (error) {
-        if (error instanceof Deno.errors.NotFound) {
-          // TODO: error
-          throw "FOOO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
-        }
+        // TODO: throw specific error if file not found !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         throw error;
       }
       if (!modulePath.includes("//")) {
@@ -85,13 +86,14 @@ async function makeGeneratorBundle(
 
 async function collectModules(root: string): Promise<ModuleSet> {
   const modules = new ModuleSet(REAL_FILE_SYSTEM, root);
-  for await (const walkEntry of walk(root)) {
-    const { path } = walkEntry;
-    // TODO: backslash to slash...
-    if (walkEntry.isFile && path.endsWith(".soia")) {
-      const relativePath = paths.relative(root, path);
-      modules.parseAndResolve(relativePath);
+  const soiaFiles = await glob(paths.join(root, "**/*.soia"), { stat: true, withFileTypes: true });
+  for await (const soiaFile of soiaFiles) {
+    if (!soiaFile.isFile) {
+      continue;
     }
+    const relativePath =
+      paths.relative(root, soiaFile.fullpath()).replace(/\\/g, "/");
+    modules.parseAndResolve(relativePath);
   }
   return modules;
 }
@@ -108,13 +110,20 @@ class WatchModeMainLoop {
   ) {}
 
   async start() {
-    this.generate();
-    const watcher = Deno.watchFs(this.root);
-    for await (const event of watcher) {
-      if (event.paths.some((p) => p.endsWith(".soia"))) {
+    await this.generate();
+    const watcher = new Watcher(this.root, {
+      renameDetection: true,
+      recursive: true,
+      persistent: true,
+    });
+    watcher.on("all", (_, targetPath, targetPathNext) => {
+      if (
+        targetPath.endsWith(".soia") ||
+        (targetPathNext && targetPathNext.endsWith(".soia"))
+      ) {
         this.triggerGeneration();
       }
-    }
+    });
   }
 
   private triggerGeneration(): void {
@@ -129,7 +138,7 @@ class WatchModeMainLoop {
     this.timeoutId = globalThis.setTimeout(() => this.generate(), delayMillis);
   }
 
-  private async generate(): Promise<void> {
+  async generate(): Promise<void> {
     this.generating = true;
     this.timeoutId = undefined;
     this.mustRegenerate = false;
@@ -151,6 +160,7 @@ class WatchModeMainLoop {
 
   private async doGenerate(moduleSet: ModuleSet): Promise<void> {
     // TODO: swallow error if some I/O error is thrown?
+    await fs.mkdir(paths.join(this.root, "soiagen"), { recursive: true });
 
     const pathToFile = new Map<string, CodeGenerator.OutputFile>();
     for (const bundle of this.generatorBundles) {
@@ -169,13 +179,15 @@ class WatchModeMainLoop {
     const allPaths = //
       [...lastWriteBatch.pathToFile.keys()].concat([...pathToFile.keys()]);
     await Promise.all(allPaths.map(async (p) => {
+      const fsPath = paths.join(this.root, "soiagen", p);
       const newFile = pathToFile.get(p);
       if (newFile === undefined) {
-        return Deno.remove(p);
+        // TODO: check if I need to swallow error
+        return fs.unlink(fsPath);
       }
       const oldFile = lastWriteBatch.pathToFile.get(p);
       if (oldFile?.code === newFile.code) {
-        const mtime = (await Deno.stat(p)).mtime;
+        const mtime = (await fs.stat(fsPath)).mtime;
         if (
           mtime !== null &&
           mtime.getDate() <= lastWriteBatch.writeTime.getDate()
@@ -183,8 +195,8 @@ class WatchModeMainLoop {
           return;
         }
       }
-      const writePath = paths.join(this.root, p);
-      await Deno.writeTextFile(writePath, newFile.code);
+      await fs.mkdir(paths.dirname(fsPath), { recursive: true });
+      await fs.writeFile(fsPath, newFile.code, "utf-8");
     }));
 
     this.lastWriteBatch = {
@@ -193,7 +205,7 @@ class WatchModeMainLoop {
     };
   }
 
-  private timeoutId?: number;
+  private timeoutId?: NodeJS.Timeout;
   private generating = false;
   private mustRegenerate = false;
   private lastWriteBatch: WriteBatch = {
@@ -208,29 +220,26 @@ function renderErrors(errors: readonly Error[]): void {
 }
 
 async function main(): Promise<void> {
-  const parsedFlags = flags.parse(Deno.args, {});
+  const {
+    values: { root, watch },
+  } = parseArgs({ options: {
+    root: {
+      type: 'string',
+      short: 'r',
+      default: '.',
+    },
+    watch: {
+      type: 'boolean',
+      short: 'w',
+    },
+  } });
 
-  let root: string;
-  {
-    const args = parsedFlags["_"];
-    if (args.length <= 0) {
-      root = ".";
-    } else if (args.length === 1) {
-      root = String(args[0]);
-    } else {
-      // TODO: ERROR !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      return;
-    }
-  }
-
-  const soiaConfigPath = paths.join(root, "soia.yml");
+  const soiaConfigPath = paths.join(root!, "soia.yml");
   let soiaConfigContents: string;
   try {
-    soiaConfigContents = Deno.readTextFileSync(soiaConfigPath);
+    soiaConfigContents = await fs.readFile(soiaConfigPath, "utf-8");
   } catch (error) {
-    if (error instanceof Deno.errors.NotFound) {
-      // TODO: error
-    }
+    // TODO: throw specific error if file not found !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     throw error;
   }
 
@@ -242,7 +251,12 @@ async function main(): Promise<void> {
   );
   // TODO: ensure consistent order
 
-  (await new WatchModeMainLoop(root, generatorBundles)).start();
+  const watchModeMainLoop = new WatchModeMainLoop(root!, generatorBundles);
+  if (watch) {
+    await watchModeMainLoop.start();
+  } else {
+    await watchModeMainLoop.generate();
+  }
 }
 
 main();

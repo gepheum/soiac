@@ -1,7 +1,7 @@
 import { expect } from "buckwheat";
 import { describe, it } from "mocha";
 
-import { tokenizeModule } from "./tokenizer.ts";
+import { tokenizeModule } from "./tokenizer.js";
 
 describe("tokenizer", () => {
   it("tokenizes module with simple struct", () => {
@@ -188,6 +188,18 @@ describe("tokenizer", () => {
     });
   });
 
+  it("tokenizes module with single-quoted string", () => {
+    const code = [
+      'const FOO: string = \'"\\\\\\""\'',
+    ].join("\n");
+
+    const actual = tokenizeModule(code, "path/to/module");
+
+    expect(actual).toMatch({
+      errors: [],
+    });
+  });
+
   it("tokenizes module with unterminated multi-line comment", () => {
     const code = "  /*";
 
@@ -262,6 +274,26 @@ describe("tokenizer", () => {
               position: 7,
             },
             message: "String literal contains invalid escape sequence",
+          },
+        ],
+      },
+    );
+  });
+
+  it("tokenizes module with lone surrogate in string literal", () => {
+    const code = "'\uD800a'";
+
+    const actual = tokenizeModule(code, "path/to/module");
+
+    expect(actual).toMatch(
+      {
+        errors: [
+          {
+            token: {
+              text: "'\ud800a'",
+              position: 0,
+            },
+            message: "String literal contains lone surrogates",
           },
         ],
       },

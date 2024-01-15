@@ -1,7 +1,7 @@
 import { expect } from "buckwheat";
 import { describe, it } from "mocha";
-import { Error, Token } from "./module.ts";
-import { capitalize, convert, validate } from "./casing.ts";
+import type { Error, Token } from "./module.d.ts";
+import { capitalize, convert, validate } from "./casing.js";
 
 function makeToken(text: string): Token {
   return {

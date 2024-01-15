@@ -231,8 +231,8 @@ export interface Import {
   readonly modulePath: Token;
 }
 
-export interface MutableProcedure<Mutable extends boolean = true> {
-  readonly kind: "procedure";
+export interface MutableMethod<Mutable extends boolean = true> {
+  readonly kind: "method";
   readonly name: Token;
   readonly unresolvedRequestType: UnresolvedType;
   readonly unresolvedResponseType: UnresolvedType;
@@ -242,9 +242,9 @@ export interface MutableProcedure<Mutable extends boolean = true> {
   readonly number: number;
 }
 
-export type Procedure<Mutable extends boolean = boolean> = //
-  Mutable extends true ? MutableProcedure
-    : Readonly<MutableProcedure<false>>;
+export type Method<Mutable extends boolean = boolean> = //
+  Mutable extends true ? MutableMethod
+    : Readonly<MutableMethod<false>>;
 
 /** A `const` declaration. */
 export interface MutableConstant<Mutable extends boolean = true> {
@@ -324,7 +324,7 @@ export type MutableValue = Value<true>;
 export type ModuleLevelDeclaration<Mutable extends boolean = boolean> =
   | Record<Mutable>
   | Import
-  | Procedure<Mutable>
+  | Method<Mutable>
   | Constant<Mutable>;
 
 export type MutableModuleLevelDeclaration = ModuleLevelDeclaration<true>;
@@ -378,7 +378,7 @@ export interface Module<Mutable extends boolean = boolean> {
       ? MutableRecordLocation[]
       : readonly RecordLocation[];
 
-  readonly procedures: ReadonlyArray<Procedure<Mutable>>;
+  readonly methods: ReadonlyArray<Method<Mutable>>;
 
   readonly constants: ReadonlyArray<Constant<Mutable>>;
 }

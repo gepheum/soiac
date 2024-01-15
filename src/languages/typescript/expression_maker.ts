@@ -1,8 +1,10 @@
-// Returns a TypeScript expression transforming a value from a "copyable" type
-// into a "frozen" or "maybe-mutable" type.
+/**
+ * @fileoverview Returns a TypeScript expression transforming a value from a
+ * `copyable` type into a `frozen` or `maybe-mutable` type.
+ */
 
-import { ResolvedType } from "../../module.ts";
-import { TypeSpeller } from "./type_speller.ts";
+import type { ResolvedType } from "../../module.d.ts";
+import { TypeSpeller } from "./type_speller.js";
 
 export interface TransformExpressionArg {
   type: ResolvedType;

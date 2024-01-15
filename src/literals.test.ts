@@ -4,7 +4,7 @@ import {
   isStringLiteral,
   unquoteAndUnescape,
   valueHasPrimitiveType,
-} from "./literals.ts";
+} from "./literals.js";
 
 describe("literals", () => {
   it("#unquoteAndUnescape() works", () => {

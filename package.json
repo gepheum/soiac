@@ -1,0 +1,44 @@
+{
+  "name": "soiac",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "./dist/cjs/compiler.js",
+  "module": "./dist/esm/compiler.js",
+  "files": [
+    "dist/cjs",
+    "dist/esm",
+    "src",
+    "!**/*.test.ts"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "mocha",
+    "soiac": "node ./dist/esm/compiler.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gepheum/soia-typescript.git"
+  },
+  "author": "Tyler Fibonacci <gepheum@gmail.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/gepheum/soia-typescript/issues"
+  },
+  "homepage": "https://github.com/gepheum/soia-typescript#readme",
+  "dependencies": {
+    "glob": "^1.1.0",
+    "soia": "^1.0.12",
+    "watcher": "^2.3.0",
+    "yaml": "^2.3.4",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.1",
+    "@types/node": "^20.6.0",
+    "buckwheat": "^1.1.2",
+    "mocha": "^10.2.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2"
+  }
+}

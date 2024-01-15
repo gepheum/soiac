@@ -1,5 +1,5 @@
-import { unquoteAndUnescape } from "./literals.ts";
-import { CodeLine, Error, ErrorSink, Result, Token } from "./module.ts";
+import { unquoteAndUnescape } from "./literals.js";
+import type { CodeLine, Error, ErrorSink, Result, Token } from "./module.d.ts";
 
 /** Tokenizes the given module. */
 export function tokenizeModule(
@@ -83,7 +83,7 @@ export function tokenizeModule(
     // Validate string literals.
     const stringLiteral = group[11] || group[14];
     if (stringLiteral !== undefined) {
-      if (!stringLiteral.endsWith(stringLiteral[0])) {
+      if (!stringLiteral.endsWith(stringLiteral[0]!)) {
         errors.push({
           token: token,
           message: "Unterminated string literal",
@@ -100,8 +100,7 @@ export function tokenizeModule(
         continue;
       }
       // Check that the string doesn't contain lone surrogates.
-      // Seems like we can't use isWellFormed in Deno:
-      //   https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/isWellFormed
+      // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/isWellFormed
       const unquoted = unquoteAndUnescape(stringLiteral);
       try {
         encodeURIComponent(unquoted);
@@ -174,6 +173,7 @@ function validateWord(token: Token, errors: ErrorSink): boolean {
 }
 
 class Lines {
+  /** Splits the given code into multiple lines. */
   constructor(code: string, modulePath: string) {
     const lines = this.lines;
     let lineStart = 0;
@@ -197,12 +197,18 @@ class Lines {
     }
   }
 
+  /**
+   * Returns the line at the given position, where the position is the char
+   * index within `code`.
+   * Requires the position to be >= the position given the last time the method
+   * was called.
+   */
   advancePosition(position: number): CodeLine {
     const lines = this.lines;
-    while (lines.length >= 2 && position >= this.lines[1].position) {
+    while (lines.length >= 2 && position >= this.lines[1]!.position) {
       lines.shift();
     }
-    return lines[0];
+    return lines[0]!;
   }
 
   private readonly lines: CodeLine[] = [];

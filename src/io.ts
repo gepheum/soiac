@@ -1,3 +1,5 @@
+import * as fs from "fs";
+
 export interface FileReader {
   readTextFile(path: string): string | undefined;
 }
@@ -9,9 +11,12 @@ export interface FileWriter {
 class RealFileSystem implements FileReader, FileWriter {
   readTextFile(path: string): string | undefined {
     try {
-      return Deno.readTextFileSync(path);
+      return fs.readFileSync(path, "utf-8");
     } catch (error) {
-      if (error instanceof Deno.errors.NotFound) {
+      if (
+        typeof error === "object" && error && "code" in error &&
+        error.code === "ENOENT"
+      ) {
         return undefined;
       }
       throw error;
@@ -19,7 +24,7 @@ class RealFileSystem implements FileReader, FileWriter {
   }
 
   writeTextFile(path: string, contents: string): void {
-    Deno.writeTextFileSync(path, contents);
+    fs.writeFileSync(path, contents, "utf-8");
   }
 }
 

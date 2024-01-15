@@ -1,4 +1,4 @@
-import { ErrorSink, Token } from "./module.ts";
+import type { ErrorSink, Token } from "./module.d.ts";
 
 export type Casing =
   | "lowerCamel"
@@ -48,7 +48,7 @@ export function convert(text: string, source: Casing, target: Casing): string {
 
 /** Returns a new string with the first letter of `name` capitalized. */
 export function capitalize(name: string) {
-  return name[0].toUpperCase() + name.slice(1);
+  return name[0]!.toUpperCase() + name.slice(1);
 }
 
 function matches(

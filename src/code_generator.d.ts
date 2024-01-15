@@ -1,10 +1,9 @@
-// TODO: add version
-
 import type { ModuleSet } from "./module_set.ts";
 import type { z } from "zod";
 
 export interface CodeGenerator<Config = unknown> {
   readonly id: string;
+  readonly version: string;
   readonly configType: z.ZodType<Config>;
   generateCode(modules: ModuleSet, config: Config): CodeGenerator.Output;
 }

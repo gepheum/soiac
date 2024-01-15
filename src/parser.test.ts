@@ -1,8 +1,8 @@
 import { describe, it } from "mocha";
 import { expect } from "buckwheat";
-import { parseModule } from "./parser.ts";
-import { tokenizeModule } from "./tokenizer.ts";
-import { Module, Result } from "./module.ts";
+import { parseModule } from "./parser.js";
+import { tokenizeModule } from "./tokenizer.js";
+import { Module, Result } from "./module.js";
 
 function parse(contents: string): Result<Module> {
   const pathToModule = "path/to/module";
@@ -691,9 +691,9 @@ describe("module parser", () => {
     });
   });
 
-  it("procedure", () => {
+  it("method", () => {
     const actualModule = parse(`
-      procedure Search(req):resp;`);
+      method Search(req):resp;`);
 
     expect(
       actualModule,
@@ -703,7 +703,7 @@ describe("module parser", () => {
         path: "path/to/module",
         nameToDeclaration: {
           Search: {
-            kind: "procedure",
+            kind: "method",
             name: {
               text: "Search",
             },
@@ -722,8 +722,8 @@ describe("module parser", () => {
             number: 2472497608,
           },
         },
-        procedures: [{
-          kind: "procedure",
+        methods: [{
+          kind: "method",
           name: {
             text: "Search",
           },
@@ -734,9 +734,9 @@ describe("module parser", () => {
     });
   });
 
-  it("procedure with explicit number", () => {
+  it("method with explicit number", () => {
     const actualModule = parse(`
-      procedure Search(req):resp = 200;`);
+      method Search(req):resp = 200;`);
 
     expect(actualModule).toMatch({
       result: {
@@ -744,7 +744,7 @@ describe("module parser", () => {
         path: "path/to/module",
         nameToDeclaration: {
           Search: {
-            kind: "procedure",
+            kind: "method",
             name: {
               text: "Search",
             },
@@ -763,8 +763,8 @@ describe("module parser", () => {
             number: 200,
           },
         },
-        procedures: [{
-          kind: "procedure",
+        methods: [{
+          kind: "method",
           name: {
             text: "Search",
           },

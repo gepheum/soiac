@@ -1,4 +1,4 @@
-import { Module, RecordLocation } from "../../module.ts";
+import type { Module, RecordLocation } from "../../module.d.ts";
 
 export interface ClassName {
   /**
@@ -62,7 +62,7 @@ export function getClassName(
       ? STRUCT_NESTED_TYPE_NAMES
       : ENUM_NESTED_TYPE_NAMES;
 
-    const record = recordAncestors[i];
+    const record = recordAncestors[i]!;
     let name = record.name.text;
 
     while (seenNames.has(name) || reservedNames.has(name)) {
@@ -83,7 +83,7 @@ export function getClassName(
   if (record.modulePath !== origin.path) {
     // The record is located in an imported module.
     const path = record.modulePath;
-    const importedNames = origin.pathToImportedNames[path];
+    const importedNames = origin.pathToImportedNames[path]!;
     if (importedNames.kind === "all") {
       const alias = importedNames.alias;
       type = [`x_${alias}`].concat(parts).join(".");
@@ -122,14 +122,14 @@ const BUILTIN_TYPE_NAMES: ReadonlySet<string> = new Set([
   "Record",
 ]);
 
-// TODO: comment
+/** Generated types nested within a struct namespace. */
 const STRUCT_NESTED_TYPE_NAMES: ReadonlySet<string> = new Set([
   "Copyable",
   "Mutable",
   "OrMutable",
 ]);
 
-// TODO: comment
+/** Generated types nested within an enum namespace. */
 const ENUM_NESTED_TYPE_NAMES: ReadonlySet<string> = new Set([
   "ConstantKind",
   "Copyable",

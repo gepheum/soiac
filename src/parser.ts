@@ -1,4 +1,4 @@
-import {
+import type {
   Error,
   ErrorSink,
   FieldPath,
@@ -6,10 +6,10 @@ import {
   MutableConstant,
   MutableDeclaration,
   MutableField,
+  MutableMethod,
   MutableModule,
   MutableModuleLevelDeclaration,
   MutableObjectEntry,
-  MutableProcedure,
   MutableRecord,
   MutableRecordLevelDeclaration,
   MutableValue,
@@ -21,8 +21,8 @@ import {
   UnresolvedArrayType,
   UnresolvedRecordRef,
   UnresolvedType,
-} from "./module.ts";
-import * as casing from "./casing.ts";
+} from "./module.d.ts";
+import * as casing from "./casing.js";
 
 /** Runs syntactic analysis on a module. */
 export function parseModule(
@@ -47,8 +47,8 @@ export function parseModule(
       nameToDeclaration[name] = declaration;
     }
   }
-  const procedures = declarations.filter((d): d is MutableProcedure =>
-    d.kind === "procedure"
+  const methods = declarations.filter((d): d is MutableMethod =>
+    d.kind === "method"
   );
   const constants = declarations.filter((d): d is MutableConstant =>
     d.kind === "constant"
@@ -63,7 +63,7 @@ export function parseModule(
       pathToImportedNames: {},
       // Will be populated at a later stage.
       records: [],
-      procedures: procedures,
+      methods: methods,
       constants: constants,
     },
     errors: errors,
@@ -129,7 +129,7 @@ function parseDeclaration(
     /*2:*/ parentIsRoot ? null : "removed",
     /*3:*/ parentIsRoot ? null : TOKEN_IS_IDENTIFIER,
     /*4:*/ parentIsRoot ? "import" : null,
-    /*5:*/ parentIsRoot ? "procedure" : null,
+    /*5:*/ parentIsRoot ? "method" : null,
     /*6:*/ parentIsRoot ? "const" : null,
   ];
   const match = it.expectThenMove(expected);
@@ -146,7 +146,7 @@ function parseDeclaration(
     case 4:
       return parseImport(it);
     case 5:
-      return parseProcedure(it);
+      return parseMethod(it);
     case 6:
       return parseConstant(it);
     default:
@@ -626,7 +626,7 @@ function parseImportGivenName(
   };
 }
 
-function parseProcedure(it: TokenIterator): MutableProcedure | null {
+function parseMethod(it: TokenIterator): MutableMethod | null {
   const nameMatch = it.expectThenMove([TOKEN_IS_IDENTIFIER]);
   if (nameMatch.case < 0) {
     return null;
@@ -660,7 +660,7 @@ function parseProcedure(it: TokenIterator): MutableProcedure | null {
   }
 
   return {
-    kind: "procedure",
+    kind: "method",
     name: nameMatch.token,
     unresolvedRequestType: requestType,
     unresolvedResponseType: responseType,
@@ -896,7 +896,7 @@ class TokenIterator {
   expectThenMove(
     expected: ReadonlyArray<string | TokenPredicate | null>,
   ): TokenMatch {
-    const token = this.tokens[this.tokenIndex];
+    const token = this.tokens[this.tokenIndex]!;
     for (let i = 0; i < expected.length; ++i) {
       const e = expected[i];
       if (e === null) {
@@ -925,7 +925,7 @@ class TokenIterator {
       expectedParts.push(e instanceof TokenPredicate ? e.what() : `"${e}"`);
     }
     const expectedMsg = expectedParts.length === 1
-      ? expectedParts[0]
+      ? expectedParts[0]!
       : `one of: ${expectedParts.join(", ")}`;
 
     this.errors.push({
@@ -940,11 +940,11 @@ class TokenIterator {
   }
 
   peek(): string {
-    return this.tokens[this.tokenIndex].text;
+    return this.tokens[this.tokenIndex]!.text;
   }
 
   peekBack(): string {
-    return this.tokens[this.tokenIndex - 1].text;
+    return this.tokens[this.tokenIndex - 1]!.text;
   }
 
   next(): void {

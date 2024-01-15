@@ -1,15 +1,15 @@
-import {
+import type {
   Field,
   PrimitiveType,
   RecordKey,
   RecordLocation,
   ResolvedRecordRef,
   ResolvedType,
-} from "../../module.ts";
-import { capitalize, convert } from "../../casing.ts";
-import { ClassName } from "./class_speller.ts";
-import { TsType } from "./ts_type.ts";
-import { TYPE_FLAVORS, TypeFlavor, TypeSpeller } from "./type_speller.ts";
+} from "../../module.d.ts";
+import { capitalize, convert } from "../../casing.js";
+import { ClassName } from "./class_speller.js";
+import { TsType } from "./ts_type.js";
+import { TYPE_FLAVORS, TypeFlavor, TypeSpeller } from "./type_speller.js";
 
 /**
  * A `RecordInfo` contains all the information required for generating

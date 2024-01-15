@@ -1,30 +1,31 @@
-// Transforms a type found in a `.soia` file into a TypeScript type.
-//
-// The flavors are:
-//   · copyable
-//       The value can be passed by parameter to the `create` method of a frozen
-//       class or the constructor of a mutable class.
-//   · frozen:
-//       The type is deeply immutable. All the fields of a frozen class are also
-//       frozen.
-//   · maybe-mutable:
-//       Type union of the frozen type and the mutable type. All the fields of a
-//       mutable class are maybe-mutable.
-//   · mutable:
-//       A mutable value. Not all types found in `.soia` files support this, e.g.
-//       strings and numbers are always immutable.
-
-import {
+import type {
   Module,
   RecordKey,
   RecordLocation,
   ResolvedType,
-} from "../../module.ts";
-import { ClassName, getClassName } from "./class_speller.ts";
-import { TsType } from "./ts_type.ts";
+} from "../../module.d.ts";
+import { ClassName, getClassName } from "./class_speller.js";
+import { TsType } from "./ts_type.js";
 
 export type TypeFlavor = "copyable" | "frozen" | "maybe-mutable" | "mutable";
 
+/**
+ * Transforms a type found in a `.soia` file into a TypeScript type.
+ *
+ * The flavors are:
+ *   · copyable
+ *       The value can be passed by parameter to the `create` method of a frozen
+ *       class or the constructor of a mutable class.
+ *   · frozen:
+ *       The type is deeply immutable. All the fields of a frozen class are also
+ *       frozen.
+ *   · maybe-mutable:
+ *       Type union of the frozen type and the mutable type. All the fields of a
+ *       mutable class are maybe-mutable.
+ *   · mutable:
+ *       A mutable value. Not all types found in `.soia` files support this, e.g.
+ *       strings and numbers are always immutable.
+ */
 export class TypeSpeller {
   constructor(
     readonly recordMap: ReadonlyMap<RecordKey, RecordLocation>,

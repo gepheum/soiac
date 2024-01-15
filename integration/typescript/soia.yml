@@ -1,4 +1,0 @@
-generators:
-  - id: typescript
-    iTrustTheCodeAtThisUrl: true
-    config: ~

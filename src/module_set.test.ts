@@ -1,7 +1,7 @@
 import { expect } from "buckwheat";
 import { describe, it } from "mocha";
-import type { FileReader } from "./io.ts";
-import { ModuleSet } from "./module_set.ts";
+import type { FileReader } from "./io.js";
+import { ModuleSet } from "./module_set.js";
 
 class FakeFileReader implements FileReader {
   readTextFile(modulePath: string): string | undefined {
@@ -32,8 +32,8 @@ describe("module set", () => {
           zoo: other_module.Outer.Zoo;
         }
 
-        procedure GetBar(Outer.Foo): Bar;
-        procedure GetBar2(Outer.Foo): Bar = 100;
+        method GetBar(Outer.Foo): Bar;
+        method GetBar2(Outer.Foo): Bar = 100;
       `,
     );
     fakeFileReader.pathToCode.set(
@@ -115,7 +115,7 @@ describe("module set", () => {
             ],
           },
           "GetBar": {
-            kind: "procedure",
+            kind: "method",
             name: { text: "GetBar" },
             requestType: {
               kind: "record",
@@ -275,6 +275,34 @@ describe("module set", () => {
             text: "bar",
           },
           message: "Module already imported with a different alias",
+        },
+      ],
+    });
+  });
+
+  it("module path cannot contain backslash", () => {
+    const fakeFileReader = new FakeFileReader();
+    fakeFileReader.pathToCode.set(
+      "path/to/root/path/to/module",
+      `
+        import * as foo from ".\\\\module";
+      `,
+    );
+    fakeFileReader.pathToCode.set(
+      "path/to/root/path/to/other/module",
+      "",
+    );
+
+    const moduleSet = new ModuleSet(fakeFileReader, "path/to/root");
+    const actual = moduleSet.parseAndResolve("path/to/module");
+
+    expect(actual).toMatch({
+      errors: [
+        {
+          token: {
+            text: '".\\\\module"',
+          },
+          message: "Replace backslash with slash",
         },
       ],
     });
@@ -537,7 +565,7 @@ describe("module set", () => {
       });
     });
 
-    it("procedure and constant types are validated", () => {
+    it("method and constant types are validated", () => {
       const fakeFileReader = new FakeFileReader();
       fakeFileReader.pathToCode.set(
         "path/to/root/path/to/module",
@@ -545,8 +573,8 @@ describe("module set", () => {
           struct Foo {
           }
 
-          procedure Pa([Foo|a]): string;
-          procedure Pb(string): [Foo|b];
+          method Pa([Foo|a]): string;
+          method Pb(string): [Foo|b];
           const FOO: [Foo|c] = [];
         `,
       );
