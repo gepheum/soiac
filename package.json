@@ -37,7 +37,6 @@
   "dependencies": {
     "glob": "^10.3.10",
     "soia": "^1.0.12",
-    "ts-node": "^10.9.2",
     "watcher": "^2.3.0",
     "yaml": "^2.3.4",
     "zod": "^3.22.4",
@@ -49,6 +48,7 @@
     "buckwheat": "^1.1.2",
     "mocha": "^10.2.0",
     "prettier": "^3.2.4",
+    "ts-node": "^10.9.2",
     "typescript": "^5.2.2"
   }
 }
