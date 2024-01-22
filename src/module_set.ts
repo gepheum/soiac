@@ -501,7 +501,7 @@ export class ModuleSet {
           return false;
         }
         value.items.forEach((v) =>
-          this.verifyValueType(v, expectedType.item, errors)
+          this.verifyValueType(v, expectedType.item, errors),
         );
         value.key = expectedType.key;
         return true;

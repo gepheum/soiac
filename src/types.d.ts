@@ -67,17 +67,17 @@ export interface Token {
 /** A user error in a module. */
 export type SoiaError =
   | {
-    readonly token: Token;
-    readonly message: string;
-    readonly expected?: undefined;
-    readonly errorIsInOtherModule?: true;
-  }
+      readonly token: Token;
+      readonly message: string;
+      readonly expected?: undefined;
+      readonly errorIsInOtherModule?: true;
+    }
   | {
-    readonly token: Token;
-    readonly expected: string;
-    readonly message?: undefined;
-    readonly errorIsInOtherModule?: undefined;
-  };
+      readonly token: Token;
+      readonly expected: string;
+      readonly message?: undefined;
+      readonly errorIsInOtherModule?: undefined;
+    };
 
 export interface ErrorSink {
   push(error: SoiaError): void;
@@ -222,8 +222,7 @@ export interface MutableField<Mutable extends boolean = true> {
 
 /** Field of a struct or enum. */
 export type Field<Mutable extends boolean = boolean> = //
-  Mutable extends true ? MutableField
-    : Readonly<MutableField<false>>;
+  Mutable extends true ? MutableField : Readonly<MutableField<false>>;
 
 /** A 'removed' declaration in a struct or enum. */
 export interface Removed {
@@ -289,8 +288,7 @@ export interface MutableMethod<Mutable extends boolean = true> {
 }
 
 export type Method<Mutable extends boolean = boolean> = //
-  Mutable extends true ? MutableMethod
-    : Readonly<MutableMethod<false>>;
+  Mutable extends true ? MutableMethod : Readonly<MutableMethod<false>>;
 
 /** A `const` declaration. */
 export interface MutableConstant<Mutable extends boolean = true> {
@@ -347,10 +345,7 @@ export type ArrayValue<Mutable extends boolean = boolean> = //
 export interface MutableLiteralValue {
   readonly kind: "literal";
   readonly token: Token;
-  type?:
-    | PrimitiveType
-    | { kind: "enum"; key: RecordKey }
-    | { kind: "null" };
+  type?: PrimitiveType | { kind: "enum"; key: RecordKey } | { kind: "null" };
 }
 
 export type LiteralValue<Mutable extends boolean = boolean> = //
@@ -420,9 +415,9 @@ export interface Module<Mutable extends boolean = boolean> {
    * Depth-first: "Foo.Bar" will appear before "Foo".
    */
   readonly records: //
-    Mutable extends true //
-      ? MutableRecordLocation[]
-      : readonly RecordLocation[];
+  Mutable extends true //
+    ? MutableRecordLocation[]
+    : readonly RecordLocation[];
 
   readonly methods: ReadonlyArray<Method<Mutable>>;
 

@@ -47,11 +47,11 @@ export function parseModule(
       nameToDeclaration[name] = declaration;
     }
   }
-  const methods = declarations.filter((d): d is MutableMethod =>
-    d.kind === "method"
+  const methods = declarations.filter(
+    (d): d is MutableMethod => d.kind === "method",
   );
-  const constants = declarations.filter((d): d is MutableConstant =>
-    d.kind === "constant"
+  const constants = declarations.filter(
+    (d): d is MutableConstant => d.kind === "constant",
   );
   return {
     result: {
@@ -111,7 +111,8 @@ function parseDeclarations(
       }
     }
     if (
-      noTokenWasConsumed || (it.peek() !== "" && !isLastToken(it.peekBack()))
+      noTokenWasConsumed ||
+      (it.peek() !== "" && !isLastToken(it.peekBack()))
     ) {
       let nestedLevel = 0;
       while (true) {
@@ -153,13 +154,13 @@ function parseDeclaration(
   switch (match.case) {
     case 0:
       recordType = "struct";
-      // Falls through.
+    // Falls through.
     case 1:
       return parseRecord(it, recordType);
     case 2:
       return parseRemoved(it, match.token);
     case 3:
-      return parseField(it, match.token, parentNode as ("struct" | "enum"));
+      return parseField(it, match.token, parentNode as "struct" | "enum");
     case 4:
       return parseImport(it);
     case 5:
@@ -328,11 +329,7 @@ function parseRecord(
   }
   const declarations = parseDeclarations(it, recordType);
   it.expectThenMove(["}"]);
-  const builder = new RecordBuilder(
-    nameMatch.token,
-    recordType,
-    it.errors,
-  );
+  const builder = new RecordBuilder(nameMatch.token, recordType, it.errors);
   for (const declaration of declarations) {
     builder.addDeclaration(declaration);
   }
@@ -427,7 +424,7 @@ function parseType(it: TokenIterator): UnresolvedType | undefined {
         };
         break;
       }
-      // Falls through.
+    // Falls through.
     case 2: {
       // Dot.
       value = parseRecordRef(it, match.token);
@@ -535,18 +532,14 @@ function parseInt(it: TokenIterator): number {
 
 // Parses the "removed" declaration.
 // Assumes the current token is the token after "removed".
-function parseRemoved(
-  it: TokenIterator,
-  removedToken: Token,
-): Removed | null {
+function parseRemoved(it: TokenIterator, removedToken: Token): Removed | null {
   const numbers: number[] = [];
   // The 3 states are:
   //   · '?': expect a number or a semicolon
   //   · ',': expect a comma or a semicolon
   //   · '0': expect a single number or the lower bound of a range
   let expect: "?" | "," | "0" = "?";
-  loop:
-  while (true) {
+  loop: while (true) {
     const expected: Array<string | TokenPredicate | null> = [
       /*0:*/ expect === "," ? "," : null,
       /*1:*/ expect === "?" || expect === "0" ? TOKEN_IS_INT : null,
@@ -919,9 +912,8 @@ class TokenIterator {
       if (e === null) {
         continue;
       }
-      const match = (e instanceof TokenPredicate)
-        ? e.matches(token.text)
-        : (token.text === e);
+      const match =
+        e instanceof TokenPredicate ? e.matches(token.text) : token.text === e;
       if (!match) {
         continue;
       }
@@ -941,9 +933,10 @@ class TokenIterator {
       }
       expectedParts.push(e instanceof TokenPredicate ? e.what() : `"${e}"`);
     }
-    const expectedMsg = expectedParts.length === 1
-      ? expectedParts[0]!
-      : `one of: ${expectedParts.join(", ")}`;
+    const expectedMsg =
+      expectedParts.length === 1
+        ? expectedParts[0]!
+        : `one of: ${expectedParts.join(", ")}`;
 
     this.errors.push({
       token: token,

@@ -36,7 +36,7 @@ export function convert(text: string, source: Casing, target: Casing): string {
   }
   switch (target) {
     case "lowerCamel":
-      return words.map((w, i) => i ? capitalize(w) : w).join("");
+      return words.map((w, i) => (i ? capitalize(w) : w)).join("");
     case "lower_underscore":
       return words.join("_");
     case "UpperCamel":

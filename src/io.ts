@@ -14,7 +14,9 @@ class RealFileSystem implements FileReader, FileWriter {
       return fs.readFileSync(path, "utf-8");
     } catch (error) {
       if (
-        typeof error === "object" && error && "code" in error &&
+        typeof error === "object" &&
+        error &&
+        "code" in error &&
         error.code === "ENOENT"
       ) {
         return undefined;

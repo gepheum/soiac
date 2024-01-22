@@ -189,9 +189,7 @@ describe("tokenizer", () => {
   });
 
   it("tokenizes module with single-quoted string", () => {
-    const code = [
-      'const FOO: string = \'"\\\\\\""\'',
-    ].join("\n");
+    const code = ['const FOO: string = \'"\\\\\\""\''].join("\n");
 
     const actual = tokenizeModule(code, "path/to/module");
 
@@ -205,19 +203,17 @@ describe("tokenizer", () => {
 
     const actual = tokenizeModule(code, "path/to/module");
 
-    expect(actual).toMatch(
-      {
-        errors: [
-          {
-            token: {
-              text: "/*",
-              position: 2,
-            },
-            message: "Unterminated multi-line comment",
+    expect(actual).toMatch({
+      errors: [
+        {
+          token: {
+            text: "/*",
+            position: 2,
           },
-        ],
-      },
-    );
+          message: "Unterminated multi-line comment",
+        },
+      ],
+    });
   });
 
   it("tokenizes module with unterminated string literal", () => {
@@ -225,19 +221,17 @@ describe("tokenizer", () => {
 
     const actual = tokenizeModule(code, "path/to/module");
 
-    expect(actual).toMatch(
-      {
-        errors: [
-          {
-            token: {
-              text: "'foo",
-              position: 7,
-            },
-            message: "Unterminated string literal",
+    expect(actual).toMatch({
+      errors: [
+        {
+          token: {
+            text: "'foo",
+            position: 7,
           },
-        ],
-      },
-    );
+          message: "Unterminated string literal",
+        },
+      ],
+    });
   });
 
   it("tokenizes module with invalid char sequence", () => {
@@ -245,19 +239,17 @@ describe("tokenizer", () => {
 
     const actual = tokenizeModule(code, "path/to/module");
 
-    expect(actual).toMatch(
-      {
-        errors: [
-          {
-            token: {
-              text: "##",
-              position: 2,
-            },
-            message: "Invalid sequence of characters",
+    expect(actual).toMatch({
+      errors: [
+        {
+          token: {
+            text: "##",
+            position: 2,
           },
-        ],
-      },
-    );
+          message: "Invalid sequence of characters",
+        },
+      ],
+    });
   });
 
   it("tokenizes module with invalid escape sequence in string literal", () => {
@@ -265,19 +257,17 @@ describe("tokenizer", () => {
 
     const actual = tokenizeModule(code, "path/to/module");
 
-    expect(actual).toMatch(
-      {
-        errors: [
-          {
-            token: {
-              text: "'foo\\u0ffg'",
-              position: 7,
-            },
-            message: "String literal contains invalid escape sequence",
+    expect(actual).toMatch({
+      errors: [
+        {
+          token: {
+            text: "'foo\\u0ffg'",
+            position: 7,
           },
-        ],
-      },
-    );
+          message: "String literal contains invalid escape sequence",
+        },
+      ],
+    });
   });
 
   it("tokenizes module with lone surrogate in string literal", () => {
@@ -285,19 +275,17 @@ describe("tokenizer", () => {
 
     const actual = tokenizeModule(code, "path/to/module");
 
-    expect(actual).toMatch(
-      {
-        errors: [
-          {
-            token: {
-              text: "'\ud800a'",
-              position: 0,
-            },
-            message: "String literal contains lone surrogates",
+    expect(actual).toMatch({
+      errors: [
+        {
+          token: {
+            text: "'\ud800a'",
+            position: 0,
           },
-        ],
-      },
-    );
+          message: "String literal contains lone surrogates",
+        },
+      ],
+    });
   });
 
   it("tokenizes module with invalid word", () => {
@@ -305,24 +293,22 @@ describe("tokenizer", () => {
 
     const actual = tokenizeModule(code, "path/to/module");
 
-    expect(actual).toMatch(
-      {
-        errors: [
-          {
-            token: { text: "00" },
-            message: "Invalid number",
-          },
-          {
-            token: { text: "1_" },
-            message: "Invalid number",
-          },
-          {
-            token: { text: "2a" },
-            message: "Invalid number",
-          },
-        ],
-      },
-    );
+    expect(actual).toMatch({
+      errors: [
+        {
+          token: { text: "00" },
+          message: "Invalid number",
+        },
+        {
+          token: { text: "1_" },
+          message: "Invalid number",
+        },
+        {
+          token: { text: "2a" },
+          message: "Invalid number",
+        },
+      ],
+    });
   });
 
   it("tokenizes module with invalid identifiers", () => {
@@ -330,23 +316,21 @@ describe("tokenizer", () => {
 
     const actual = tokenizeModule(code, "path/to/module");
 
-    expect(actual).toMatch(
-      {
-        errors: [
-          {
-            message: "Identifier cannot start with _",
-          },
-          {
-            message: "Identifier cannot end with _",
-          },
-          {
-            message: "Identifier cannot contain __ sequence",
-          },
-          {
-            message: "Digit cannot follow _",
-          },
-        ],
-      },
-    );
+    expect(actual).toMatch({
+      errors: [
+        {
+          message: "Identifier cannot start with _",
+        },
+        {
+          message: "Identifier cannot end with _",
+        },
+        {
+          message: "Identifier cannot contain __ sequence",
+        },
+        {
+          message: "Digit cannot follow _",
+        },
+      ],
+    });
   });
 });

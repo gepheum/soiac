@@ -54,10 +54,9 @@ async function collectModules(root: string): Promise<ModuleSet> {
     if (!soiaFile.isFile) {
       continue;
     }
-    const relativePath = paths.relative(root, soiaFile.fullpath()).replace(
-      /\\/g,
-      "/",
-    );
+    const relativePath = paths
+      .relative(root, soiaFile.fullpath())
+      .replace(/\\/g, "/");
     modules.parseAndResolve(relativePath);
   }
   return modules;
@@ -120,9 +119,9 @@ class WatchModeMainLoop {
       } else {
         await this.doGenerate(moduleSet);
         if (this.watchModeOn) {
-          const successMessage = `Generation succeeded at ${
-            new Date().toLocaleTimeString("en-GB")
-          }`;
+          const successMessage = `Generation succeeded at ${new Date().toLocaleTimeString(
+            "en-GB",
+          )}`;
           console.log(makeGreen(successMessage));
           console.log("\nWaiting for changes in files matching:");
           console.log(`  ${paths.resolve(this.root)}/**/*.soia`);
@@ -193,15 +192,15 @@ class WatchModeMainLoop {
 
     // Remove all the pre-existing paths which haven't been overridden.
     Promise.all(
-      Array.from(preExistingAbsolutePaths).sort((a, b) =>
-        b.localeCompare(a, "en")
-      ).map(async (p) => {
-        try {
-          await fs.rm(p, { force: true, recursive: true });
-        } catch {
-          // Ignore error.
-        }
-      }),
+      Array.from(preExistingAbsolutePaths)
+        .sort((a, b) => b.localeCompare(a, "en"))
+        .map(async (p) => {
+          try {
+            await fs.rm(p, { force: true, recursive: true });
+          } catch {
+            // Ignore error.
+          }
+        }),
     );
 
     this.lastWriteBatch = {
@@ -311,7 +310,7 @@ async function main(): Promise<void> {
     },
   });
 
-  if (!await isDirectory(root!)) {
+  if (!(await isDirectory(root!))) {
     console.log(makeRed(`Not a directory: ${root}`));
     process.exit(1);
   }

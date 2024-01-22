@@ -69,9 +69,7 @@ describe("module parser", () => {
             ],
             nestedRecords: [],
             numbering: "implicit",
-            removedNumbers: [
-              2,
-            ],
+            removedNumbers: [2],
           },
         },
       },
@@ -130,7 +128,7 @@ describe("module parser", () => {
                 },
                 number: 0,
               },
-              "value_field": {
+              value_field: {
                 kind: "field",
                 name: {
                   text: "value_field",
@@ -401,15 +399,17 @@ describe("module parser", () => {
       struct A {}`);
 
     expect(actualModule).toMatch({
-      errors: [{
-        token: {
-          text: "A",
-          line: {
-            lineNumber: 2,
+      errors: [
+        {
+          token: {
+            text: "A",
+            line: {
+              lineNumber: 2,
+            },
           },
+          message: 'Duplicate identifier "A"',
         },
-        message: 'Duplicate identifier "A"',
-      }],
+      ],
     });
   });
 
@@ -421,15 +421,17 @@ describe("module parser", () => {
       }`);
 
     expect(actualModule).toMatch({
-      errors: [{
-        token: {
-          text: "a",
-          line: {
-            lineNumber: 3,
+      errors: [
+        {
+          token: {
+            text: "a",
+            line: {
+              lineNumber: 3,
+            },
           },
+          message: 'Duplicate identifier "a"',
         },
-        message: 'Duplicate identifier "a"',
-      }],
+      ],
     });
   });
 
@@ -440,17 +442,20 @@ describe("module parser", () => {
       }`);
 
     expect(actualModule).toMatch({
-      errors: [{
-        token: {
-          text: "a",
+      errors: [
+        {
+          token: {
+            text: "a",
+          },
+          expected: "UpperCamel",
         },
-        expected: "UpperCamel",
-      }, {
-        token: {
-          text: "A",
+        {
+          token: {
+            text: "A",
+          },
+          expected: "lower_underscore",
         },
-        expected: "lower_underscore",
-      }],
+      ],
     });
   });
 
@@ -462,12 +467,14 @@ describe("module parser", () => {
       }`);
 
     expect(actualModule).toMatch({
-      errors: [{
-        token: {
-          text: "b",
+      errors: [
+        {
+          token: {
+            text: "b",
+          },
+          message: "Cannot mix implicit and explicit numbering",
         },
-        message: "Cannot mix implicit and explicit numbering",
-      }],
+      ],
     });
   });
 
@@ -479,12 +486,14 @@ describe("module parser", () => {
       }`);
 
     expect(actualModule).toMatch({
-      errors: [{
-        token: {
-          text: "b",
+      errors: [
+        {
+          token: {
+            text: "b",
+          },
+          message: "Cannot mix implicit and explicit numbering",
         },
-        message: "Cannot mix implicit and explicit numbering",
-      }],
+      ],
     });
   });
 
@@ -496,12 +505,14 @@ describe("module parser", () => {
       }`);
 
     expect(actualModule).toMatch({
-      errors: [{
-        token: {
-          text: "b",
+      errors: [
+        {
+          token: {
+            text: "b",
+          },
+          message: "Duplicate field number 0",
         },
-        message: "Duplicate field number 0",
-      }],
+      ],
     });
   });
 
@@ -512,12 +523,14 @@ describe("module parser", () => {
       }`);
 
     expect(actualModule).toMatch({
-      errors: [{
-        token: {
-          text: "removed",
+      errors: [
+        {
+          token: {
+            text: "removed",
+          },
+          message: "Duplicate field number 2",
         },
-        message: "Duplicate field number 2",
-      }],
+      ],
     });
   });
 
@@ -529,12 +542,14 @@ describe("module parser", () => {
       }`);
 
     expect(actualModule).toMatch({
-      errors: [{
-        token: {
-          text: "removed",
+      errors: [
+        {
+          token: {
+            text: "removed",
+          },
+          message: "Duplicate field number 0",
         },
-        message: "Duplicate field number 0",
-      }],
+      ],
     });
   });
 
@@ -546,12 +561,14 @@ describe("module parser", () => {
       }`);
 
     expect(actualModule).toMatch({
-      errors: [{
-        token: {
-          text: "A",
+      errors: [
+        {
+          token: {
+            text: "A",
+          },
+          message: "Missing field number 1",
         },
-        message: "Missing field number 1",
-      }],
+      ],
     });
   });
 
@@ -594,12 +611,14 @@ describe("module parser", () => {
       }`);
 
     expect(actualModule).toMatch({
-      errors: [{
-        token: {
-          text: "A",
+      errors: [
+        {
+          token: {
+            text: "A",
+          },
+          message: "Missing field number 1",
         },
-        message: "Missing field number 1",
-      }],
+      ],
     });
   });
 
@@ -623,7 +642,7 @@ describe("module parser", () => {
         pathToImportedNames: {},
         records: [],
       },
-      "errors": [],
+      errors: [],
     });
   });
 
@@ -695,9 +714,7 @@ describe("module parser", () => {
     const actualModule = parse(`
       method Search(req):resp;`);
 
-    expect(
-      actualModule,
-    ).toMatch({
+    expect(actualModule).toMatch({
       result: {
         kind: "module",
         path: "path/to/module",
@@ -709,26 +726,32 @@ describe("module parser", () => {
             },
             unresolvedRequestType: {
               kind: "record",
-              nameParts: [{
-                text: "req",
-              }],
+              nameParts: [
+                {
+                  text: "req",
+                },
+              ],
             },
             unresolvedResponseType: {
               kind: "record",
-              nameParts: [{
-                text: "resp",
-              }],
+              nameParts: [
+                {
+                  text: "resp",
+                },
+              ],
             },
             number: 2472497608,
           },
         },
-        methods: [{
-          kind: "method",
-          name: {
-            text: "Search",
+        methods: [
+          {
+            kind: "method",
+            name: {
+              text: "Search",
+            },
+            number: 2472497608,
           },
-          number: 2472497608,
-        }],
+        ],
       },
       errors: [],
     });
@@ -750,26 +773,32 @@ describe("module parser", () => {
             },
             unresolvedRequestType: {
               kind: "record",
-              nameParts: [{
-                text: "req",
-              }],
+              nameParts: [
+                {
+                  text: "req",
+                },
+              ],
             },
             unresolvedResponseType: {
               kind: "record",
-              nameParts: [{
-                text: "resp",
-              }],
+              nameParts: [
+                {
+                  text: "resp",
+                },
+              ],
             },
             number: 200,
           },
         },
-        methods: [{
-          kind: "method",
-          name: {
-            text: "Search",
+        methods: [
+          {
+            kind: "method",
+            name: {
+              text: "Search",
+            },
+            number: 200,
           },
-          number: 200,
-        }],
+        ],
       },
       errors: [],
     });
@@ -801,12 +830,14 @@ describe("module parser", () => {
             },
           },
         },
-        constants: [{
-          kind: "constant",
-          name: {
-            text: "FOO",
+        constants: [
+          {
+            kind: "constant",
+            name: {
+              text: "FOO",
+            },
           },
-        }],
+        ],
       },
       errors: [],
     });
@@ -932,12 +963,14 @@ describe("module parser", () => {
             },
           },
         },
-        constants: [{
-          kind: "constant",
-          name: {
-            text: "FOO",
+        constants: [
+          {
+            kind: "constant",
+            name: {
+              text: "FOO",
+            },
           },
-        }],
+        ],
       },
       errors: [],
     });

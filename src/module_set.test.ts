@@ -50,7 +50,7 @@ describe("module set", () => {
     expect(actual).toMatch({
       result: {
         nameToDeclaration: {
-          "other_module": {
+          other_module: {
             kind: "import-as",
             name: {
               text: "other_module",
@@ -59,14 +59,14 @@ describe("module set", () => {
               text: '"./other/module"',
             },
           },
-          "Outer": {
+          Outer: {
             kind: "record",
             name: {
               text: "Outer",
             },
             recordType: "struct",
             nameToDeclaration: {
-              "Foo": {
+              Foo: {
                 kind: "record",
               },
             },
@@ -87,7 +87,7 @@ describe("module set", () => {
               },
             ],
           },
-          "Bar": {
+          Bar: {
             kind: "record",
             recordType: "struct",
             name: {
@@ -114,7 +114,7 @@ describe("module set", () => {
               { name: { text: "zoo" } },
             ],
           },
-          "GetBar": {
+          GetBar: {
             kind: "method",
             name: { text: "GetBar" },
             requestType: {
@@ -135,7 +135,7 @@ describe("module set", () => {
             },
             number: 2129467645,
           },
-          "GetBar2": {
+          GetBar2: {
             number: 100,
           },
         },
@@ -260,10 +260,7 @@ describe("module set", () => {
         import * as bar from "./other/module";
       `,
     );
-    fakeFileReader.pathToCode.set(
-      "path/to/root/path/to/other/module",
-      "",
-    );
+    fakeFileReader.pathToCode.set("path/to/root/path/to/other/module", "");
 
     const moduleSet = new ModuleSet(fakeFileReader, "path/to/root");
     const actual = moduleSet.parseAndResolve("path/to/module");
@@ -288,10 +285,7 @@ describe("module set", () => {
         import * as foo from ".\\\\module";
       `,
     );
-    fakeFileReader.pathToCode.set(
-      "path/to/root/path/to/other/module",
-      "",
-    );
+    fakeFileReader.pathToCode.set("path/to/root/path/to/other/module", "");
 
     const moduleSet = new ModuleSet(fakeFileReader, "path/to/root");
     const actual = moduleSet.parseAndResolve("path/to/module");
@@ -386,7 +380,7 @@ describe("module set", () => {
       expect(actual).toMatch({
         result: {
           nameToDeclaration: {
-            "Foo": {
+            Foo: {
               fields: [
                 {
                   name: { text: "users" },
@@ -398,9 +392,7 @@ describe("module set", () => {
                     },
                     key: {
                       pipeToken: { text: "|" },
-                      fieldNames: [
-                        { text: "key" },
-                      ],
+                      fieldNames: [{ text: "key" }],
                       keyType: {
                         kind: "primitive",
                         primitive: "string",
@@ -418,9 +410,7 @@ describe("module set", () => {
                     },
                     key: {
                       pipeToken: { text: "|" },
-                      fieldNames: [
-                        { text: "key_enum" },
-                      ],
+                      fieldNames: [{ text: "key_enum" }],
                       keyType: {
                         kind: "record",
                         key: "path/to/module:141",
@@ -438,10 +428,7 @@ describe("module set", () => {
                     },
                     key: {
                       pipeToken: { text: "|" },
-                      fieldNames: [
-                        { text: "user" },
-                        { text: "key" },
-                      ],
+                      fieldNames: [{ text: "user" }, { text: "key" }],
                       keyType: {
                         kind: "primitive",
                         primitive: "string",
@@ -1105,10 +1092,7 @@ describe("module set", () => {
               },
             },
           },
-          constants: [
-            {},
-            {},
-          ],
+          constants: [{}, {}],
         },
         errors: [],
       });

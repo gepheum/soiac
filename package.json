@@ -11,6 +11,7 @@
   ],
   "scripts": {
     "build": "tsc",
+    "format": "prettier --write \"src/**/*.ts\"",
     "test": "mocha",
     "soiac": "npm run build && node ./dist/compiler.js"
   },
@@ -38,6 +39,7 @@
     "@types/node": "^20.6.0",
     "buckwheat": "^1.1.2",
     "mocha": "^10.2.0",
+    "prettier": "^3.2.4",
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2"
   }

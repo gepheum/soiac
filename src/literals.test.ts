@@ -8,12 +8,9 @@ import {
 
 describe("literals", () => {
   it("#unquoteAndUnescape() works", () => {
-    expect(unquoteAndUnescape('"foo\\\r\n\\\n\\\r\\tbar\\\\t"')).toBe([
-      "foo",
-      "",
-      "",
-      "\tbar\\t",
-    ].join("\n"));
+    expect(unquoteAndUnescape('"foo\\\r\n\\\n\\\r\\tbar\\\\t"')).toBe(
+      ["foo", "", "", "\tbar\\t"].join("\n"),
+    );
   });
 
   it("#isStringLiteral() works", () => {
@@ -38,8 +35,9 @@ describe("literals", () => {
 
     it("works with timestamp", () => {
       expect(valueHasPrimitiveType("'2023-12-25Z'", "timestamp")).toBe(true);
-      expect(valueHasPrimitiveType('"2023-12-25T12:00+08:30"', "timestamp"))
-        .toBe(true);
+      expect(
+        valueHasPrimitiveType('"2023-12-25T12:00+08:30"', "timestamp"),
+      ).toBe(true);
       expect(valueHasPrimitiveType('"2023-12-25"', "timestamp")).toBe(false);
       expect(valueHasPrimitiveType('"now"', "timestamp")).toBe(false);
     });
