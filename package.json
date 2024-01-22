@@ -1,8 +1,16 @@
 {
   "name": "soiac",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "",
   "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    }
+  },
   "files": [
     "dist",
     "src",
@@ -11,6 +19,7 @@
   "scripts": {
     "build": "tsc",
     "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\"",
     "test": "mocha",
     "soiac": "npm run build && node ./dist/compiler.js"
   },
