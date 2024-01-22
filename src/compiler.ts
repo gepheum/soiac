@@ -345,11 +345,11 @@ async function main(): Promise<void> {
   generatorBundles.sort((a, b) => {
     const aId = a.generator.id;
     const bId = b.generator.id;
-    return aId.localeCompare(bId, 'en-US');
+    return aId.localeCompare(bId, "en-US");
   });
   // Look for duplicates.
   for (let i = 0; i < generatorBundles.length - 1; ++i) {
-    const {id} = generatorBundles[i]!.generator;
+    const { id } = generatorBundles[i]!.generator;
     if (id === generatorBundles[i + 1]!.generator.id) {
       console.log(makeRed(`Duplicate generator: ${id}`));
       process.exit(1);
