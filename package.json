@@ -3,19 +3,18 @@
   "version": "1.0.0",
   "description": "",
   "type": "module",
-  "main": "./dist/cjs/compiler.js",
-  "module": "./dist/esm/compiler.js",
+  "main": "./dist/compiler.js",
   "files": [
-    "dist/cjs",
-    "dist/esm",
+    "dist",
     "src",
     "!**/*.test.ts"
   ],
   "scripts": {
     "build": "tsc",
     "test": "mocha",
-    "soiac": "node ./dist/esm/compiler.js"
+    "soiac": "npm run build && node ./dist/compiler.js"
   },
+  "bin": "./dist/compiler.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/gepheum/soia-typescript.git"
@@ -31,7 +30,8 @@
     "soia": "^1.0.12",
     "watcher": "^2.3.0",
     "yaml": "^2.3.4",
-    "zod": "^3.22.4"
+    "zod": "^3.22.4",
+    "zod-validation-error": "^3.0.0"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.1",

@@ -1,4 +1,4 @@
-import type { ErrorSink, Token } from "./module.d.ts";
+import type { ErrorSink, Token } from "./types.js";
 
 export type Casing =
   | "lowerCamel"

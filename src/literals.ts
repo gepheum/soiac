@@ -1,4 +1,4 @@
-import type { Primitive } from "./module.d.ts";
+import type { Primitive } from "./types.js";
 
 export function unquoteAndUnescape(stringLiteral: string): string {
   const unquoted = stringLiteral.slice(1, -1);

@@ -1,6 +1,6 @@
 import { expect } from "buckwheat";
 import { describe, it } from "mocha";
-import type { Error, Token } from "./module.d.ts";
+import type { SoiaError, Token } from "./types.js";
 import { capitalize, convert, validate } from "./casing.js";
 
 function makeToken(text: string): Token {
@@ -20,8 +20,8 @@ function makeToken(text: string): Token {
 function doValidate(
   text: string,
   casing: "lower_underscore" | "UpperCamel" | "UPPER_UNDERSCORE",
-): Error[] {
-  const errors: Error[] = [];
+): SoiaError[] {
+  const errors: SoiaError[] = [];
   validate(makeToken(text), casing, errors);
   return errors;
 }

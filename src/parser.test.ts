@@ -2,7 +2,7 @@ import { describe, it } from "mocha";
 import { expect } from "buckwheat";
 import { parseModule } from "./parser.js";
 import { tokenizeModule } from "./tokenizer.js";
-import { Module, Result } from "./module.js";
+import { Module, Result } from "./types.js";
 
 function parse(contents: string): Result<Module> {
   const pathToModule = "path/to/module";
@@ -940,6 +940,164 @@ describe("module parser", () => {
         }],
       },
       errors: [],
+    });
+  });
+
+  describe("handle and recover from bad statements", () => {
+    it("#0", () => {
+      const actualModule = parse(`
+        const FOO: string = "";
+        a b c;
+        struct Foo {}`);
+
+      expect(actualModule).toMatch({
+        result: {
+          nameToDeclaration: {
+            FOO: {},
+            Foo: {},
+          },
+        },
+        errors: [
+          {
+            token: {
+              text: "a",
+            },
+            expected: 'one of: "struct", "enum", "import", "method", "const"',
+          },
+        ],
+      });
+    });
+
+    it("#1", () => {
+      const actualModule = parse(`
+        const FOO: string = "";
+        a;
+        struct Foo {}`);
+
+      expect(actualModule).toMatch({
+        result: {
+          nameToDeclaration: {
+            FOO: {},
+            Foo: {},
+          },
+        },
+        errors: [
+          {
+            token: {
+              text: "a",
+            },
+            expected: 'one of: "struct", "enum", "import", "method", "const"',
+          },
+        ],
+      });
+    });
+
+    it("#2", () => {
+      const actualModule = parse(`
+          const FOO: string = "";
+          ;;;
+          struct Foo {}`);
+
+      expect(actualModule).toMatch({
+        result: {
+          nameToDeclaration: {
+            FOO: {},
+            Foo: {},
+          },
+        },
+        errors: [
+          {
+            expected: 'one of: "struct", "enum", "import", "method", "const"',
+          },
+          {
+            expected: 'one of: "struct", "enum", "import", "method", "const"',
+          },
+          {
+            expected: 'one of: "struct", "enum", "import", "method", "const"',
+          },
+        ],
+      });
+    });
+
+    it("#3", () => {
+      const actualModule = parse(`
+          const FOO: string = "";;`);
+
+      expect(actualModule).toMatch({
+        result: {
+          nameToDeclaration: {
+            FOO: {},
+          },
+        },
+        errors: [
+          {
+            expected: 'one of: "struct", "enum", "import", "method", "const"',
+          },
+        ],
+      });
+    });
+
+    it("#4", () => {
+      const actualModule = parse(`
+          struct Foo { struct Bar {}`);
+
+      expect(actualModule).toMatch({
+        result: {
+          nameToDeclaration: {
+            Foo: {
+              nameToDeclaration: {
+                Bar: {},
+              },
+            },
+          },
+        },
+        errors: [
+          {
+            expected: '"}"',
+          },
+        ],
+      });
+    });
+
+    it("#5", () => {
+      const actualModule = parse(`
+          struct Foo { a { a; {} } b: string; }`);
+
+      expect(actualModule).toMatch({
+        result: {
+          nameToDeclaration: {
+            Foo: {
+              nameToDeclaration: {
+                b: {},
+              },
+            },
+          },
+        },
+        errors: [
+          {
+            expected: '":"',
+          },
+        ],
+      });
+    });
+
+    it("#6", () => {
+      const actualModule = parse(`
+          struct Foo {  }} struct Bar { }`);
+
+      expect(actualModule).toMatch({
+        result: {
+          nameToDeclaration: {
+            Foo: {},
+            Bar: {},
+          },
+        },
+        errors: [
+          {
+            expected: 'one of: "struct", "enum", "import", "method", "const"',
+          },
+        ],
+      });
     });
   });
 });

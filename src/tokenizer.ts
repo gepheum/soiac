@@ -1,5 +1,5 @@
 import { unquoteAndUnescape } from "./literals.js";
-import type { CodeLine, Error, ErrorSink, Result, Token } from "./module.d.ts";
+import type { CodeLine, ErrorSink, Result, SoiaError, Token } from "./types.js";
 
 /** Tokenizes the given module. */
 export function tokenizeModule(
@@ -7,7 +7,7 @@ export function tokenizeModule(
   modulePath: string,
 ): Result<Token[]> {
   const tokens: Token[] = [];
-  const errors: Error[] = [];
+  const errors: SoiaError[] = [];
 
   const lines = new Lines(code, modulePath);
 

@@ -5,7 +5,6 @@ import {
   valueHasPrimitiveType,
 } from "./literals.js";
 import type {
-  Error,
   ErrorSink,
   Field,
   Import,
@@ -22,10 +21,11 @@ import type {
   ResolvedRecordRef,
   ResolvedType,
   Result,
+  SoiaError,
   Token,
   UnresolvedRecordRef,
   UnresolvedType,
-} from "./module.ts";
+} from "./types.js";
 import { parseModule } from "./parser.js";
 import { tokenizeModule } from "./tokenizer.js";
 import * as paths from "path";
@@ -67,7 +67,7 @@ export class ModuleSet {
       };
     }
 
-    const errors: Error[] = [];
+    const errors: SoiaError[] = [];
 
     const parsedModule = parseModule(sentenceNode.result, modulePath);
     errors.push(...parsedModule.errors);
@@ -113,13 +113,18 @@ export class ModuleSet {
         const hasCircularDependency = otherModule.errors.some(
           (e) => e.message === circularDependencyMessage,
         );
-        const message = hasCircularDependency
-          ? circularDependencyMessage
-          : "Imported module has errors";
-        errors.push({
-          token: declaration.modulePath,
-          message: message,
-        });
+        if (hasCircularDependency) {
+          errors.push({
+            token: declaration.modulePath,
+            message: circularDependencyMessage,
+          });
+        } else {
+          errors.push({
+            token: declaration.modulePath,
+            message: "Imported module has errors",
+            errorIsInOtherModule: true,
+          });
+        }
       }
     }
 
@@ -666,7 +671,7 @@ export class ModuleSet {
   private readonly inProgressSet = new Set<string>();
   private readonly mutableRecordMap = new Map<RecordKey, RecordLocation>();
   private readonly mutableResolvedModules: MutableModule[] = [];
-  private readonly mutableErrors: Error[] = [];
+  private readonly mutableErrors: SoiaError[] = [];
 
   get recordMap(): ReadonlyMap<RecordKey, RecordLocation> {
     return this.mutableRecordMap;
@@ -676,7 +681,7 @@ export class ModuleSet {
     return this.mutableResolvedModules;
   }
 
-  get errors(): readonly Error[] {
+  get errors(): readonly SoiaError[] {
     return this.mutableErrors;
   }
 }
@@ -749,11 +754,11 @@ class TypeResolver {
       start = module;
     }
 
-    const makeNotARecordError = (name: Token): Error => ({
+    const makeNotARecordError = (name: Token): SoiaError => ({
       token: name,
       message: "Does not refer to a struct or an enum",
     });
-    const makeCannotFindNameError = (name: Token): Error => ({
+    const makeCannotFindNameError = (name: Token): SoiaError => ({
       token: name,
       message: `Cannot find name '${name.text}'`,
     });

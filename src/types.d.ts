@@ -1,4 +1,40 @@
-// Type declarations for representing the result of parsing a module.
+/**
+ * @fileoverview Public types present in the interface between the compiler and
+ * language plugins.
+ */
+
+import type { z } from "zod";
+
+// -----------------------------------------------------------------------------
+// CODE GENERATION
+// -----------------------------------------------------------------------------
+
+/**
+ * Generates code in one programming language from a set of parsed Soia modules.
+ */
+export interface CodeGenerator<Config = unknown> {
+  readonly id: string;
+  readonly version: string;
+  readonly configType: z.ZodType<Config>;
+  generateCode(input: CodeGenerator.Input<Config>): CodeGenerator.Output;
+}
+
+export declare namespace CodeGenerator {
+  export interface Input<Config> {
+    readonly modules: ReadonlyArray<Module>;
+    readonly recordMap: ReadonlyMap<RecordKey, RecordLocation>;
+    readonly config: Config;
+  }
+
+  export interface Output {
+    readonly files: readonly OutputFile[];
+  }
+
+  export interface OutputFile {
+    readonly path: string;
+    readonly code: string;
+  }
+}
 
 // -----------------------------------------------------------------------------
 // LEXICAL ANALYSIS
@@ -29,12 +65,22 @@ export interface Token {
 // -----------------------------------------------------------------------------
 
 /** A user error in a module. */
-export type Error =
-  | { readonly token: Token; readonly message: string }
-  | { readonly token: Token; readonly expected: string; message?: undefined };
+export type SoiaError =
+  | {
+    readonly token: Token;
+    readonly message: string;
+    readonly expected?: undefined;
+    readonly errorIsInOtherModule?: true;
+  }
+  | {
+    readonly token: Token;
+    readonly expected: string;
+    readonly message?: undefined;
+    readonly errorIsInOtherModule?: undefined;
+  };
 
 export interface ErrorSink {
-  push(error: Error): void;
+  push(error: SoiaError): void;
 }
 
 /**
@@ -43,7 +89,7 @@ export interface ErrorSink {
  */
 export interface Result<T> {
   readonly result: T;
-  readonly errors: readonly Error[];
+  readonly errors: readonly SoiaError[];
 }
 
 // -----------------------------------------------------------------------------

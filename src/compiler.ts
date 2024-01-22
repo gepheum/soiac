@@ -1,36 +1,19 @@
-// TODO: clear directory?
-// TODO: print the files that were re-generated each time...
-// TODO: test that this works if the current directory is not the right one?
-// TODO: start a cycle when the loop starts...
-// TODO: make it possible to specify a glob in soia.yml to specify the soia file patterns for each language? I dunno, maybe.
-// TODO: think about importing node modules....
-// TODO: https://medium.com/@muhammadtaifkhan/watch-file-system-using-nodejs-7d4f9f16ce02#id_token=eyJhbGciOiJSUzI1NiIsImtpZCI6IjkxNDEzY2Y0ZmEwY2I5MmEzYzNmNWEwNTQ1MDkxMzJjNDc2NjA5MzciLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiIyMTYyOTYwMzU4MzQtazFrNnFlMDYwczJ0cDJhMmphbTRsamRjbXMwMHN0dGcuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiIyMTYyOTYwMzU4MzQtazFrNnFlMDYwczJ0cDJhMmphbTRsamRjbXMwMHN0dGcuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMDkzOTM3ODE1NzEyOTA1MzQyODgiLCJlbWFpbCI6ImNsZW1lbnRidGNAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsIm5iZiI6MTcwNDEzMjU0NywibmFtZSI6IkNsw6ltZW50IFJvdXgiLCJwaWN0dXJlIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EvQUNnOG9jSWdRYXQ3S21jazYzRkNQOEY2b0xzaEtFREhBSWFfZDBhQTV3OGpQbTg1NmFKTD1zOTYtYyIsImdpdmVuX25hbWUiOiJDbMOpbWVudCIsImZhbWlseV9uYW1lIjoiUm91eCIsImxvY2FsZSI6ImZyIiwiaWF0IjoxNzA0MTMyODQ3LCJleHAiOjE3MDQxMzY0NDcsImp0aSI6ImY1YzAwOGMyZTk2Njk5ZTk3Y2IzNWI2NjFhMzBkYzc2ZDFjNDI4MDQifQ.GC62G6liVo-7ZPlpHSBA9O_upeWfIfJq8Qww9nsv9okDz6ZcF39TBTfwFtQ7rJy6qUcecP9GlkdT0-Hg_UTbAvgB_8a5wfIpAmNQ0XYZaDGp1ZBJhTcBXD2nLT2tQZxPmLN4vn8mKex_4RmS5_yVFXaYcuxck7CuqCkYJ50nvAxBKcQAPzcTU-0sg2w63U9pHZhoiiSjLbkeAbB6KwQ8yv21HPBcByP2FfaGDYOU8vu1HesqJJKJNLTW6kCWHeCAXlOK8w7nP3rqCm8L-eLiuB7sgwz-0KL0tiJ6nLNNp8hP3J3jvqlyiin3PPjDEaiZtafw-lY-mV_cyYn8mSTe_Q
-// TODO: clear the screen each time
-// TODO: https://stackoverflow.com/questions/5827612/node-js-fs-readdir-recursive-directory-search
+#!/usr/bin/env node
 
-import * as process from "process";
-import type { Error } from "./module.js";
+import type { CodeGenerator, SoiaError } from "./types.js";
 import { ModuleSet } from "./module_set.js";
-import { TypescriptCodeGenerator } from "./languages/typescript.js";
 import { REAL_FILE_SYSTEM } from "./io.js";
 import * as paths from "path";
 import { z } from "zod";
 import * as yaml from "yaml";
-import { CodeGenerator } from "./code_generator.js";
 import Watcher from "watcher";
 import * as fs from "fs/promises";
-import { glob } from 'glob';
+import { glob } from "glob";
 import { parseArgs } from "node:util";
-
-const BUILTIN_CODE_GENERATORS: readonly CodeGenerator[] = [
-  new TypescriptCodeGenerator(),
-];
-
-const ID_TO_BUILTIN_CODE_GENERATOR: ReadonlyMap<string, CodeGenerator> =
-  new Map(BUILTIN_CODE_GENERATORS.map((g) => [g.id, g]));
+import { fromZodError } from "zod-validation-error";
 
 const GeneratorConfig = z.object({
-  id: z.string(),
+  mod: z.string(),
   config: z.any(),
 });
 
@@ -40,6 +23,8 @@ const SoiaConfig = z.object({
   generators: z.array(GeneratorConfig),
 });
 
+type SoiaConfigType = z.infer<typeof SoiaConfig>;
+
 interface GeneratorBundle {
   generator: CodeGenerator;
   config: GeneratorConfigType;
@@ -48,35 +33,10 @@ interface GeneratorBundle {
 async function makeGeneratorBundle(
   config: GeneratorConfigType,
 ): Promise<GeneratorBundle> {
-  const { id } = config;
-  let generator = ID_TO_BUILTIN_CODE_GENERATOR.get(id);
-  if (!generator) {
-    let modulePath: string;
-    if (id.includes("//")) {
-      modulePath = id;
-    } else {
-      if (paths.dirname(id) !== id) {
-        // TODO: error
-        throw "FOOO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
-      }
-      const path = paths.join(process.cwd(), "generators", id);
-      try {
-        modulePath = await fs.readFile(path, "utf-8");
-      } catch (error) {
-        // TODO: throw specific error if file not found !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        throw error;
-      }
-      if (!modulePath.includes("//")) {
-        // TODO: error
-        throw "FOOO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
-      }
-    }
-    const mod = await import(modulePath);
-    generator = mod.GENERATOR;
-    if (typeof generator !== "object") {
-      // TODO: error
-      throw "FOOO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
-    }
+  const mod = await import(config.mod);
+  const generator = mod.GENERATOR;
+  if (typeof generator !== "object") {
+    throw new Error(`Cannot import GENERATOR from module ${config.mod}`);
   }
   return {
     generator: generator,
@@ -86,13 +46,18 @@ async function makeGeneratorBundle(
 
 async function collectModules(root: string): Promise<ModuleSet> {
   const modules = new ModuleSet(REAL_FILE_SYSTEM, root);
-  const soiaFiles = await glob(paths.join(root, "**/*.soia"), { stat: true, withFileTypes: true });
+  const soiaFiles = await glob(paths.join(root, "**/*.soia"), {
+    stat: true,
+    withFileTypes: true,
+  });
   for await (const soiaFile of soiaFiles) {
     if (!soiaFile.isFile) {
       continue;
     }
-    const relativePath =
-      paths.relative(root, soiaFile.fullpath()).replace(/\\/g, "/");
+    const relativePath = paths.relative(root, soiaFile.fullpath()).replace(
+      /\\/g,
+      "/",
+    );
     modules.parseAndResolve(relativePath);
   }
   return modules;
@@ -107,6 +72,7 @@ class WatchModeMainLoop {
   constructor(
     private readonly root: string,
     private readonly generatorBundles: readonly GeneratorBundle[],
+    private readonly watchModeOn: boolean,
   ) {}
 
   async start() {
@@ -138,17 +104,30 @@ class WatchModeMainLoop {
     this.timeoutId = globalThis.setTimeout(() => this.generate(), delayMillis);
   }
 
-  async generate(): Promise<void> {
+  async generate(): Promise<boolean> {
     this.generating = true;
     this.timeoutId = undefined;
     this.mustRegenerate = false;
+    if (this.watchModeOn) {
+      console.clear();
+    }
     try {
       const moduleSet = await collectModules(this.root);
-      const { errors } = moduleSet;
+      const errors = moduleSet.errors.filter((e) => !e.errorIsInOtherModule);
       if (errors.length) {
         renderErrors(errors);
+        return false;
       } else {
         await this.doGenerate(moduleSet);
+        if (this.watchModeOn) {
+          const successMessage = `Generation succeeded at ${
+            new Date().toLocaleTimeString("en-GB")
+          }`;
+          console.log(makeGreen(successMessage));
+          console.log("\nWaiting for changes in files matching:");
+          console.log(`  ${paths.resolve(this.root)}/**/*.soia`);
+        }
+        return true;
       }
     } finally {
       this.generating = false;
@@ -159,45 +138,71 @@ class WatchModeMainLoop {
   }
 
   private async doGenerate(moduleSet: ModuleSet): Promise<void> {
-    // TODO: swallow error if some I/O error is thrown?
-    await fs.mkdir(paths.join(this.root, "soiagen"), { recursive: true });
+    const soiagenDir = paths.join(this.root, "soiagen");
+    await fs.mkdir(soiagenDir, { recursive: true });
+
+    const preExistingAbsolutePaths = new Set(
+      (await glob(paths.join(soiagenDir, "**/*"))).map((p) => paths.resolve(p)),
+    );
 
     const pathToFile = new Map<string, CodeGenerator.OutputFile>();
     for (const bundle of this.generatorBundles) {
-      const files =
-        bundle.generator.generateCode(moduleSet, bundle.config).files;
+      const files = bundle.generator.generateCode({
+        modules: moduleSet.resolvedModules,
+        recordMap: moduleSet.recordMap,
+        config: bundle.config,
+      }).files;
       for (const file of files) {
         const { path } = file;
         if (pathToFile.has(path)) {
-          // TODO: error! Multiple generators output the same file...
+          throw new Error(`Multiple generators produce ${path}`);
         }
         pathToFile.set(path, file);
+        // Remove this path and all its parents from the set of paths to remove
+        // at the end of the generation.
+        for (
+          let pathToKeep = path;
+          pathToKeep !== ".";
+          pathToKeep = paths.dirname(pathToKeep)
+        ) {
+          preExistingAbsolutePaths.delete(
+            paths.resolve(soiagenDir, pathToKeep),
+          );
+        }
       }
     }
 
     const { lastWriteBatch } = this;
-    const allPaths = //
-      [...lastWriteBatch.pathToFile.keys()].concat([...pathToFile.keys()]);
-    await Promise.all(allPaths.map(async (p) => {
-      const fsPath = paths.join(this.root, "soiagen", p);
-      const newFile = pathToFile.get(p);
-      if (newFile === undefined) {
-        // TODO: check if I need to swallow error
-        return fs.unlink(fsPath);
-      }
-      const oldFile = lastWriteBatch.pathToFile.get(p);
-      if (oldFile?.code === newFile.code) {
-        const mtime = (await fs.stat(fsPath)).mtime;
-        if (
-          mtime !== null &&
-          mtime.getDate() <= lastWriteBatch.writeTime.getDate()
-        ) {
-          return;
+    await Promise.all(
+      Array.from(pathToFile).map(async ([p, newFile]) => {
+        const fsPath = paths.join(this.root, "soiagen", p);
+        const oldFile = lastWriteBatch.pathToFile.get(p);
+        if (oldFile?.code === newFile.code) {
+          const mtime = (await fs.stat(fsPath)).mtime;
+          if (
+            mtime !== null &&
+            mtime.getDate() <= lastWriteBatch.writeTime.getDate()
+          ) {
+            return;
+          }
         }
-      }
-      await fs.mkdir(paths.dirname(fsPath), { recursive: true });
-      await fs.writeFile(fsPath, newFile.code, "utf-8");
-    }));
+        await fs.mkdir(paths.dirname(fsPath), { recursive: true });
+        await fs.writeFile(fsPath, newFile.code, "utf-8");
+      }),
+    );
+
+    // Remove all the pre-existing paths which haven't been overridden.
+    Promise.all(
+      Array.from(preExistingAbsolutePaths).sort((a, b) =>
+        b.localeCompare(a, "en")
+      ).map(async (p) => {
+        try {
+          await fs.rm(p, { force: true, recursive: true });
+        } catch {
+          // Ignore error.
+        }
+      }),
+    );
 
     this.lastWriteBatch = {
       pathToFile: pathToFile,
@@ -214,48 +219,141 @@ class WatchModeMainLoop {
   };
 }
 
-function renderErrors(errors: readonly Error[]): void {
-  // TODO: change !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  console.log(JSON.stringify(errors));
+function makeCyan(text: string): string {
+  return `\x1b[36m${text}\x1b[0m`;
+}
+
+function makeYellow(text: string): string {
+  return `\x1b[33m${text}\x1b[0m`;
+}
+
+function makeRed(text: string): string {
+  return `\x1b[31m${text}\x1b[0m`;
+}
+
+function makeBlackOnWhite(text: string): string {
+  return `\x1b[47m${text}\x1b[0m`;
+}
+
+function makeGreen(text: string): string {
+  return `\x1b[32m${text}\x1b[0m`;
+}
+
+function formatError(error: SoiaError): string {
+  const { token } = error;
+  const { line, colNumber } = token;
+  const lineNumberStr = (line.lineNumber + 1).toString();
+  let result = makeCyan(line.modulePath);
+  result += ":";
+  result += makeYellow(lineNumberStr);
+  result += ":";
+  result += makeYellow((colNumber + 1).toString());
+  result += " - ";
+  if (error.expected !== undefined) {
+    result += makeRed("expected");
+    result += `: ${error.expected}`;
+  } else {
+    result += makeRed("error");
+    result += `: ${error.message}`;
+  }
+  result += "\n\n";
+  result += makeBlackOnWhite(lineNumberStr);
+  result += " ";
+  result += line.line;
+  result += "\n";
+  result += makeBlackOnWhite(" ".repeat(lineNumberStr.length));
+  result += " ".repeat(colNumber + 1);
+  result += makeRed("~".repeat(Math.max(token.text.length, 1)));
+  result += "\n";
+  return result;
+}
+
+function renderErrors(errors: readonly SoiaError[]): void {
+  const MAX_ERRORS = 10;
+  for (let i = 0; i < errors.length && i < MAX_ERRORS; ++i) {
+    const error = errors[i];
+    console.log(formatError(error!));
+  }
+  // Count the number of distinct modules with errors.
+  if (errors.length) {
+    const modules = new Set<string>();
+    for (const error of errors) {
+      modules.add(error.token.line.modulePath);
+    }
+    const numErrors = `${errors.length} error${errors.length <= 1 ? "" : "s"}`;
+    const numFiles = `${modules.size} file${modules.size <= 1 ? "" : "s"}`;
+    console.log(`Found ${numErrors} in ${numFiles}\n`);
+  }
+}
+
+async function isDirectory(path: string): Promise<boolean> {
+  try {
+    return (await fs.lstat(path)).isDirectory();
+  } catch (e) {
+    return false;
+  }
 }
 
 async function main(): Promise<void> {
   const {
     values: { root, watch },
-  } = parseArgs({ options: {
-    root: {
-      type: 'string',
-      short: 'r',
-      default: '.',
+  } = parseArgs({
+    options: {
+      root: {
+        type: "string",
+        short: "r",
+        default: ".",
+      },
+      watch: {
+        type: "boolean",
+        short: "w",
+      },
     },
-    watch: {
-      type: 'boolean',
-      short: 'w',
-    },
-  } });
+  });
 
-  const soiaConfigPath = paths.join(root!, "soia.yml");
-  let soiaConfigContents: string;
-  try {
-    soiaConfigContents = await fs.readFile(soiaConfigPath, "utf-8");
-  } catch (error) {
-    // TODO: throw specific error if file not found !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    throw error;
+  if (!await isDirectory(root!)) {
+    console.log(makeRed(`Not a directory: ${root}`));
+    process.exit(1);
   }
 
-  // TODO: maybe use safeParse
-  const soiaConfig = SoiaConfig.parse(yaml.parse(soiaConfigContents));
+  // Use an absolute path to make error messages more helpful.
+  const soiaConfigPath = paths.resolve(paths.join(root!, "soia.yml"));
+  const soiaConfigContents = REAL_FILE_SYSTEM.readTextFile(soiaConfigPath);
+  if (soiaConfigContents === undefined) {
+    console.log(makeRed(`Cannot find ${soiaConfigPath}`));
+    process.exit(1);
+  }
+
+  let soiaConfig: SoiaConfigType;
+  {
+    // `yaml.parse` fail with a helpful error message, no need to add context.
+    const parseResult = SoiaConfig.safeParse(yaml.parse(soiaConfigContents));
+    if (parseResult.success) {
+      soiaConfig = parseResult.data;
+    } else {
+      console.log(makeRed("Invalid soia config"));
+      console.log(`  Path: ${soiaConfigPath}`);
+      const validationError = fromZodError(parseResult.error);
+      console.log(validationError.toString());
+      process.exit(1);
+    }
+  }
 
   const generatorBundles: GeneratorBundle[] = await Promise.all(
     soiaConfig.generators.map(makeGeneratorBundle),
   );
-  // TODO: ensure consistent order
+  // TODO: sort, make sure no dupe
 
-  const watchModeMainLoop = new WatchModeMainLoop(root!, generatorBundles);
+  const watchModeMainLoop = new WatchModeMainLoop(
+    root!,
+    generatorBundles,
+    !!watch,
+  );
   if (watch) {
     await watchModeMainLoop.start();
   } else {
-    await watchModeMainLoop.generate();
+    const success: boolean = await watchModeMainLoop.generate();
+    process.exit(success ? 0 : 1);
   }
 }
 

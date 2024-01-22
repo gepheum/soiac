@@ -1,5 +1,4 @@
 import type {
-  Error,
   ErrorSink,
   FieldPath,
   Import,
@@ -17,11 +16,12 @@ import type {
   Primitive,
   Removed,
   Result,
+  SoiaError,
   Token,
   UnresolvedArrayType,
   UnresolvedRecordRef,
   UnresolvedType,
-} from "./module.d.ts";
+} from "./types.js";
 import * as casing from "./casing.js";
 
 /** Runs syntactic analysis on a module. */
@@ -29,7 +29,7 @@ export function parseModule(
   tokens: readonly Token[],
   modulePath: string,
 ): Result<MutableModule> {
-  const errors: Error[] = [];
+  const errors: SoiaError[] = [];
   const it = new TokenIterator(tokens, errors);
   const declarations = parseDeclarations(it, "module");
   it.expectThenMove([""]);
@@ -85,36 +85,53 @@ function parseDeclarations(
   parentNode: "module" | "struct" | "enum",
 ): MutableDeclaration[] {
   const result: MutableDeclaration[] = [];
-  const isEndToken = (t: string) => t === "}" || t === "";
+  // Returns true on a next token if it indicates that the statement is over.
+  const isEndToken = (t: string) =>
+    t === "" || (parentNode !== "module" && t === "}");
+  // Returns true if the token may be the last token of a valid statement.
+  const isLastToken = (t: string) => t === "}" || t === ";";
   while (!isEndToken(it.peek())) {
     const startIndex = it.index;
     const declaration = parseDeclaration(it, parentNode);
     if (declaration !== null) {
       result.push(declaration);
-    } else {
-      skipTokensToNextDeclaration(it);
-      if (it.index === startIndex) {
+      continue;
+    }
+    // We have an invalid statement. An error was already registered. Perhaps
+    // the statement was parsed entirely but was incorrect (`removed 1, 1;`), or
+    // zero tokens were consumed (`a`), or a few tokens were consumed but did
+    // not form a statement. We want to recover from whichever scenario to avoid
+    // showing unhelpful extra error messages.
+    const noTokenWasConsumed = it.index === startIndex;
+    if (noTokenWasConsumed) {
+      it.next();
+      if (isLastToken(it.peekBack())) {
+        // For example: two semicolons in a row.
+        continue;
+      }
+    }
+    if (
+      noTokenWasConsumed || (it.peek() !== "" && !isLastToken(it.peekBack()))
+    ) {
+      let nestedLevel = 0;
+      while (true) {
+        const token = it.peek();
+        if (token === "") {
+          break;
+        }
         it.next();
-        skipTokensToNextDeclaration(it);
+        if (token === "{") {
+          ++nestedLevel;
+        } else if (token === "}") {
+          --nestedLevel;
+        }
+        if (nestedLevel <= 0 && isLastToken(token)) {
+          break;
+        }
       }
     }
   }
   return result;
-}
-
-function skipTokensToNextDeclaration(it: TokenIterator): void {
-  let nestedLevel = 0;
-  while (true) {
-    const token = it.peekBack();
-    if (nestedLevel <= 0 && (token === "}" || token === ";")) {
-      return;
-    } else if (token === "{") {
-      ++nestedLevel;
-    } else if (token === "}") {
-      --nestedLevel;
-    }
-    it.next();
-  }
 }
 
 function parseDeclaration(
