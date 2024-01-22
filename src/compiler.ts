@@ -341,7 +341,20 @@ async function main(): Promise<void> {
   const generatorBundles: GeneratorBundle[] = await Promise.all(
     soiaConfig.generators.map(makeGeneratorBundle),
   );
-  // TODO: sort, make sure no dupe
+  // Sort for consistency.
+  generatorBundles.sort((a, b) => {
+    const aId = a.generator.id;
+    const bId = b.generator.id;
+    return aId.localeCompare(bId, 'en-US');
+  });
+  // Look for duplicates.
+  for (let i = 0; i < generatorBundles.length - 1; ++i) {
+    const {id} = generatorBundles[i]!.generator;
+    if (id === generatorBundles[i + 1]!.generator.id) {
+      console.log(makeRed(`Duplicate generator: ${id}`));
+      process.exit(1);
+    }
+  }
 
   const watchModeMainLoop = new WatchModeMainLoop(
     root!,
