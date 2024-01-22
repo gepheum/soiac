@@ -7,7 +7,7 @@ describe("index.ts", () => {
     // The actual logic is covered in other unit tests.
     // Here we just want to make sure the right symbols are exported.
     let _: exports.Module;
-    expect(exports.convert("foo", "lowerCamel", "UPPER_UNDERSCORE")).toBe(
+    expect(exports.convertCase("foo", "lowerCamel", "UPPER_UNDERSCORE")).toBe(
       "FOO",
     );
     expect(exports.capitalize("foo")).toBe("Foo");

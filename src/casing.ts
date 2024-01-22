@@ -14,7 +14,11 @@ export function validate(
   }
 }
 
-export function convert(text: string, source: Casing, target: Casing): string {
+export function convertCase(
+  text: string,
+  source: Casing,
+  target: Casing,
+): string {
   let words: string[];
   switch (source) {
     case "lowerCamel":

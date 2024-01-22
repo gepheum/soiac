@@ -1,7 +1,7 @@
 import { expect } from "buckwheat";
 import { describe, it } from "mocha";
 import type { SoiaError, Token } from "./types.js";
-import { capitalize, convert, validate } from "./casing.js";
+import { capitalize, convertCase, validate } from "./casing.js";
 
 function makeToken(text: string): Token {
   return {
@@ -130,17 +130,25 @@ describe("casing", () => {
   });
 
   it("convert", () => {
-    expect(convert("FOO_BAR", "UPPER_UNDERSCORE", "UPPER_UNDERSCORE")).toBe(
+    expect(convertCase("FOO_BAR", "UPPER_UNDERSCORE", "UPPER_UNDERSCORE")).toBe(
       "FOO_BAR",
     );
-    expect(convert("FOO_BAR", "UPPER_UNDERSCORE", "UpperCamel")).toBe("FooBar");
-    expect(convert("FOO_BAR", "UPPER_UNDERSCORE", "lowerCamel")).toBe("fooBar");
-    expect(convert("FOO_BAR", "UPPER_UNDERSCORE", "lower_underscore")).toBe(
+    expect(convertCase("FOO_BAR", "UPPER_UNDERSCORE", "UpperCamel")).toBe(
+      "FooBar",
+    );
+    expect(convertCase("FOO_BAR", "UPPER_UNDERSCORE", "lowerCamel")).toBe(
+      "fooBar",
+    );
+    expect(convertCase("FOO_BAR", "UPPER_UNDERSCORE", "lower_underscore")).toBe(
       "foo_bar",
     );
-    expect(convert("FooBar", "UpperCamel", "UPPER_UNDERSCORE")).toBe("FOO_BAR");
-    expect(convert("fooBar", "lowerCamel", "UPPER_UNDERSCORE")).toBe("FOO_BAR");
-    expect(convert("foo_bar", "lower_underscore", "UPPER_UNDERSCORE")).toBe(
+    expect(convertCase("FooBar", "UpperCamel", "UPPER_UNDERSCORE")).toBe(
+      "FOO_BAR",
+    );
+    expect(convertCase("fooBar", "lowerCamel", "UPPER_UNDERSCORE")).toBe(
+      "FOO_BAR",
+    );
+    expect(convertCase("foo_bar", "lower_underscore", "UPPER_UNDERSCORE")).toBe(
       "FOO_BAR",
     );
   });
