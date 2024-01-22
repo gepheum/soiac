@@ -1,10 +1,4 @@
-import type { ErrorSink, Token } from "./types.js";
-
-export type Casing =
-  | "lowerCamel"
-  | "lower_underscore"
-  | "UpperCamel"
-  | "UPPER_UNDERSCORE";
+import type { Casing, ErrorSink, Token } from "./types.js";
 
 /** Registers an error if the given token does not match the expected casing. */
 export function validate(

@@ -60,6 +60,12 @@ export interface Token {
   readonly colNumber: number;
 }
 
+export type Casing =
+  | "lowerCamel"
+  | "lower_underscore"
+  | "UpperCamel"
+  | "UPPER_UNDERSCORE";
+
 // -----------------------------------------------------------------------------
 // ERROR HANDLING
 // -----------------------------------------------------------------------------
