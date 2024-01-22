@@ -1,4 +1,4 @@
-name: Soia - TypeScript Client CI
+name: Soia Compiler CI
 
 on:
   push:
