@@ -2,15 +2,26 @@
   "name": "soiac",
   "version": "1.0.5",
   "description": "",
+  "homepage": "https://github.com/gepheum/soia-typescript#readme",
+  "bugs": {
+    "url": "https://github.com/gepheum/soia-typescript/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gepheum/soia-typescript.git"
+  },
+  "license": "ISC",
+  "author": "Tyler Fibonacci <gepheum@gmail.com>",
   "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
   "exports": {
     ".": {
       "import": "./dist/index.js",
       "require": "./dist/index.js"
     }
   },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "bin": "./dist/compiler.js",
   "files": [
     "dist",
     "src",
@@ -20,20 +31,9 @@
     "build": "tsc",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
-    "test": "mocha",
-    "soiac": "npm run build && node ./dist/compiler.js"
+    "soiac": "npm run build && node ./dist/compiler.js",
+    "test": "mocha"
   },
-  "bin": "./dist/compiler.js",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/gepheum/soia-typescript.git"
-  },
-  "author": "Tyler Fibonacci <gepheum@gmail.com>",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/gepheum/soia-typescript/issues"
-  },
-  "homepage": "https://github.com/gepheum/soia-typescript#readme",
   "dependencies": {
     "glob": "^10.3.10",
     "soia": "^1.0.12",
