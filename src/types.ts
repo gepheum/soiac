@@ -2,7 +2,6 @@
  * @fileoverview Public types present in the interface between the compiler and
  * language plugins.
  */
-
 import type { z } from "zod";
 
 // -----------------------------------------------------------------------------

@@ -1,8 +1,8 @@
-import { describe, it } from "mocha";
-import { expect } from "buckwheat";
 import { parseModule } from "./parser.js";
 import { tokenizeModule } from "./tokenizer.js";
 import { Module, Result } from "./types.js";
+import { expect } from "buckwheat";
+import { describe, it } from "mocha";
 
 function parse(contents: string): Result<Module> {
   const pathToModule = "path/to/module";

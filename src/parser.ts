@@ -1,3 +1,4 @@
+import * as casing from "./casing.js";
 import type {
   ErrorSink,
   FieldPath,
@@ -22,7 +23,6 @@ import type {
   UnresolvedRecordRef,
   UnresolvedType,
 } from "./types.js";
-import * as casing from "./casing.js";
 
 /** Runs syntactic analysis on a module. */
 export function parseModule(

@@ -1,10 +1,10 @@
-import { describe, it } from "mocha";
-import { expect } from "buckwheat";
 import {
   isStringLiteral,
   unquoteAndUnescape,
   valueHasPrimitiveType,
 } from "./literals.js";
+import { expect } from "buckwheat";
+import { describe, it } from "mocha";
 
 describe("literals", () => {
   it("#unquoteAndUnescape() works", () => {

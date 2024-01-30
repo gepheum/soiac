@@ -4,6 +4,8 @@ import {
   unquoteAndUnescape,
   valueHasPrimitiveType,
 } from "./literals.js";
+import { parseModule } from "./parser.js";
+import { tokenizeModule } from "./tokenizer.js";
 import type {
   ErrorSink,
   Field,
@@ -26,8 +28,6 @@ import type {
   UnresolvedRecordRef,
   UnresolvedType,
 } from "./types.js";
-import { parseModule } from "./parser.js";
-import { tokenizeModule } from "./tokenizer.js";
 import * as paths from "path";
 
 export class ModuleSet {

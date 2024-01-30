@@ -1,15 +1,14 @@
 #!/usr/bin/env node
-
-import type { CodeGenerator, SoiaError } from "./types.js";
-import { ModuleSet } from "./module_set.js";
 import { REAL_FILE_SYSTEM } from "./io.js";
-import * as paths from "path";
-import { z } from "zod";
-import * as yaml from "yaml";
-import Watcher from "watcher";
+import { ModuleSet } from "./module_set.js";
+import type { CodeGenerator, SoiaError } from "./types.js";
 import * as fs from "fs/promises";
 import { glob } from "glob";
 import { parseArgs } from "node:util";
+import * as paths from "path";
+import Watcher from "watcher";
+import * as yaml from "yaml";
+import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 
 const GeneratorConfig = z.object({
