@@ -41,12 +41,14 @@ async function makeGeneratorBundle(
   const parsedConfig = generator.configType.safeParse(config.config);
   if (!parsedConfig.success) {
     const { id } = generator;
+    console.log(makeRed(`Invalid config for ${id} generator`));
     const validationError = fromZodError(parsedConfig.error);
-    throw new Error(`Invalid config for ${id} generator: ${validationError}`);
+    console.log(validationError.toString());
+    process.exit(1);
   }
   return {
     generator: generator,
-    config: config,
+    config: parsedConfig.data,
   };
 }
 
