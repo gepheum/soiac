@@ -16,26 +16,33 @@ const GeneratorConfig = z.object({
   config: z.any(),
 });
 
-type GeneratorConfigType = z.infer<typeof GeneratorConfig>;
+type GeneratorConfig = z.infer<typeof GeneratorConfig>;
 
 const SoiaConfig = z.object({
   generators: z.array(GeneratorConfig),
 });
 
-type SoiaConfigType = z.infer<typeof SoiaConfig>;
+type SoiaConfig = z.infer<typeof SoiaConfig>;
 
-interface GeneratorBundle {
-  generator: CodeGenerator;
-  config: GeneratorConfigType;
+interface GeneratorBundle<Config = unknown> {
+  generator: CodeGenerator<Config>;
+  config: Config;
 }
 
 async function makeGeneratorBundle(
-  config: GeneratorConfigType,
+  config: GeneratorConfig,
 ): Promise<GeneratorBundle> {
   const mod = await import(config.mod);
   const generator = mod.GENERATOR;
   if (typeof generator !== "object") {
     throw new Error(`Cannot import GENERATOR from module ${config.mod}`);
+  }
+  // Validate the generator config.
+  const parsedConfig = generator.configType.safeParse(config.config);
+  if (!parsedConfig.success) {
+    const { id } = generator;
+    const validationError = fromZodError(parsedConfig.error);
+    throw new Error(`Invalid config for ${id} generator: ${validationError}`);
   }
   return {
     generator: generator,
@@ -322,7 +329,7 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  let soiaConfig: SoiaConfigType;
+  let soiaConfig: SoiaConfig;
   {
     // `yaml.parse` fail with a helpful error message, no need to add context.
     const parseResult = SoiaConfig.safeParse(yaml.parse(soiaConfigContents));
