@@ -20,6 +20,7 @@ type GeneratorConfig = z.infer<typeof GeneratorConfig>;
 
 const SoiaConfig = z.object({
   generators: z.array(GeneratorConfig),
+  srcDir: z.string().optional(),
 });
 
 type SoiaConfig = z.infer<typeof SoiaConfig>;
@@ -77,14 +78,15 @@ interface WriteBatch {
 
 class WatchModeMainLoop {
   constructor(
-    private readonly root: string,
+    private readonly srcDir: string,
+    private readonly soiagenDir: string,
     private readonly generatorBundles: readonly GeneratorBundle[],
     private readonly watchModeOn: boolean,
   ) {}
 
   async start() {
     await this.generate();
-    const watcher = new Watcher(this.root, {
+    const watcher = new Watcher(this.srcDir, {
       renameDetection: true,
       recursive: true,
       persistent: true,
@@ -119,7 +121,7 @@ class WatchModeMainLoop {
       console.clear();
     }
     try {
-      const moduleSet = await collectModules(this.root);
+      const moduleSet = await collectModules(this.srcDir);
       const errors = moduleSet.errors.filter((e) => !e.errorIsInOtherModule);
       if (errors.length) {
         renderErrors(errors);
@@ -127,12 +129,12 @@ class WatchModeMainLoop {
       } else {
         await this.doGenerate(moduleSet);
         if (this.watchModeOn) {
-          const successMessage = `Generation succeeded at ${new Date().toLocaleTimeString(
-            "en-GB",
-          )}`;
+          const date = new Date().toLocaleTimeString("en-GB");
+          const successMessage = `Generation succeeded at ${date}`;
           console.log(makeGreen(successMessage));
           console.log("\nWaiting for changes in files matching:");
-          console.log(`  ${paths.resolve(this.root)}/**/*.soia`);
+          const glob = paths.resolve(paths.join(this.srcDir, "/**/*.soia"));
+          console.log(`  ${glob}`);
         }
         return true;
       }
@@ -145,7 +147,7 @@ class WatchModeMainLoop {
   }
 
   private async doGenerate(moduleSet: ModuleSet): Promise<void> {
-    const soiagenDir = paths.join(this.root, "soiagen");
+    const { soiagenDir } = this;
     await fs.mkdir(soiagenDir, { recursive: true });
 
     const preExistingAbsolutePaths = new Set(
@@ -182,7 +184,7 @@ class WatchModeMainLoop {
     const { lastWriteBatch } = this;
     await Promise.all(
       Array.from(pathToFile).map(async ([p, newFile]) => {
-        const fsPath = paths.join(this.root, "soiagen", p);
+        const fsPath = paths.join(this.soiagenDir, p);
         const oldFile = lastWriteBatch.pathToFile.get(p);
         if (oldFile?.code === newFile.code) {
           const mtime = (await fs.stat(fsPath)).mtime;
@@ -364,8 +366,11 @@ async function main(): Promise<void> {
     }
   }
 
+  const srcDir = paths.join(root!, soiaConfig.srcDir || ".");
+  const soiagenDir = paths.join(root!, "soiagen");
   const watchModeMainLoop = new WatchModeMainLoop(
-    root!,
+    srcDir,
+    soiagenDir,
     generatorBundles,
     !!watch,
   );
