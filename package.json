@@ -2,13 +2,13 @@
   "name": "soiac",
   "version": "1.0.8",
   "description": "",
-  "homepage": "https://github.com/gepheum/soia-typescript#readme",
+  "homepage": "https://github.com/gepheum/soiac#readme",
   "bugs": {
-    "url": "https://github.com/gepheum/soia-typescript/issues"
+    "url": "https://github.com/gepheum/soiac/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gepheum/soia-typescript.git"
+    "url": "git+https://github.com/gepheum/soiac.git"
   },
   "license": "ISC",
   "author": "Tyler Fibonacci <gepheum@gmail.com>",
