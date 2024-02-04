@@ -212,13 +212,13 @@ class WatchModeMainLoop {
     );
 
     // Remove all the pre-existing paths which haven't been overridden.
-    Promise.all(
+    await Promise.all(
       Array.from(preExistingAbsolutePaths)
         .sort((a, b) => b.localeCompare(a, "en-US"))
         .map(async (p) => {
           try {
-            await fs.rm(p, { force: true, recursive: true });
-          } catch {
+            await fs.rm(p, {force: true, recursive: true});
+          } catch (e) {
             // Ignore error.
           }
         }),
