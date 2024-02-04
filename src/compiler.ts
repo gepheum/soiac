@@ -160,7 +160,9 @@ class WatchModeMainLoop {
     await fs.mkdir(soiagenDir, { recursive: true });
 
     const preExistingAbsolutePaths = new Set(
-      (await glob(paths.join(soiagenDir, "**/*"))).map((p) => paths.resolve(p)),
+      (await glob(paths.join(soiagenDir, "**/*"), { withFileTypes: true })).map(
+        (p) => p.fullpath(),
+      ),
     );
 
     const pathToFile = new Map<string, CodeGenerator.OutputFile>();
