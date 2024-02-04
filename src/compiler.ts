@@ -217,7 +217,7 @@ class WatchModeMainLoop {
         .sort((a, b) => b.localeCompare(a, "en-US"))
         .map(async (p) => {
           try {
-            await fs.rm(p, {force: true, recursive: true});
+            await fs.rm(p, { force: true, recursive: true });
           } catch (e) {
             // Ignore error.
           }
