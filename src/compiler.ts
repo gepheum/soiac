@@ -110,6 +110,15 @@ class WatchModeMainLoop {
       globalThis.clearTimeout(this.timeoutId);
     }
     const delayMillis = 200;
+    const callback = () => {
+      try {
+        this.generate();
+      } catch (e) {
+        const message =
+          e && typeof e === "object" && "message" in e ? e.message : e;
+        (console.error || console.log).call(message);
+      }
+    };
     this.timeoutId = globalThis.setTimeout(() => this.generate(), delayMillis);
   }
 
@@ -175,7 +184,7 @@ class WatchModeMainLoop {
           pathToKeep = paths.dirname(pathToKeep)
         ) {
           preExistingAbsolutePaths.delete(
-            paths.resolve(soiagenDir, pathToKeep),
+            paths.resolve(paths.join(soiagenDir, pathToKeep)),
           );
         }
       }
@@ -203,7 +212,7 @@ class WatchModeMainLoop {
     // Remove all the pre-existing paths which haven't been overridden.
     Promise.all(
       Array.from(preExistingAbsolutePaths)
-        .sort((a, b) => b.localeCompare(a, "en"))
+        .sort((a, b) => b.localeCompare(a, "en-US"))
         .map(async (p) => {
           try {
             await fs.rm(p, { force: true, recursive: true });
