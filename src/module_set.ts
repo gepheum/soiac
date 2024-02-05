@@ -1,6 +1,7 @@
 import { FileReader } from "./io.js";
 import {
   isStringLiteral,
+  literalValueToIdentity,
   unquoteAndUnescape,
   valueHasPrimitiveType,
 } from "./literals.js";
@@ -9,6 +10,7 @@ import { tokenizeModule } from "./tokenizer.js";
 import type {
   ErrorSink,
   Field,
+  FieldPath,
   Import,
   Module,
   MutableArrayType,
@@ -27,6 +29,7 @@ import type {
   Token,
   UnresolvedRecordRef,
   UnresolvedType,
+  Value,
 } from "./types.js";
 import * as paths from "path";
 
@@ -365,69 +368,73 @@ export class ModuleSet {
     topLevelType: MutableResolvedType,
     errors: ErrorSink,
   ): void {
-    const findFieldOrError = (
-      struct: Record,
-      fieldName: Token,
-    ): Field | undefined => {
-      const field = struct.nameToDeclaration[fieldName.text];
-      if (!field || field.kind !== "field") {
-        errors.push({
-          token: fieldName,
-          message: `Field not found in struct ${struct.name.text}`,
-        });
-        return undefined;
-      }
-      return field;
-    };
-
     const validate = (type: MutableArrayType): void => {
       const { key, item } = type;
       if (!key) {
         return;
       }
       const { fieldNames } = key;
-      if (item.kind !== "record" || item.recordType !== "struct") {
-        errors.push({
-          token: key.pipeToken,
-          message: "Item must have struct type",
-        });
-        return;
-      }
       // Iterate the fields in the sequence.
-      let struct = this.recordMap.get(item.key)!.record;
-      for (const fieldName of fieldNames.slice(0, -1)) {
-        const field = findFieldOrError(struct, fieldName);
-        if (!field) {
+      let currentType = item;
+      let enumRef: ResolvedRecordRef | undefined;
+      for (let i = 0; i < fieldNames.length; ++i) {
+        const fieldName = fieldNames[i]!;
+        if (currentType.kind !== "record") {
+          if (i === 0) {
+            errors.push({
+              token: key.pipeToken,
+              message: "Item must have struct type",
+            });
+          } else {
+            const previousFieldName = fieldNames[i - 1]!;
+            errors.push({
+              token: previousFieldName,
+              message: "Must have struct type",
+            });
+          }
           return;
         }
-        const fieldType = field.type!;
-        if (fieldType.kind !== "record" || fieldType.recordType !== "struct") {
-          errors.push({
-            token: fieldName,
-            message: "Does not have struct type",
-          });
-          return;
+        const record = this.recordMap.get(currentType.key)!.record;
+        if (record.recordType === "struct") {
+          const field = record.nameToDeclaration[fieldName.text];
+          if (!field || field.kind !== "field") {
+            errors.push({
+              token: fieldName,
+              message: `Field not found in struct ${record.name.text}`,
+            });
+            return undefined;
+          }
+          if (!field.type) {
+            // An error was already registered.
+            return;
+          }
+          currentType = field.type;
+        } else {
+          // An enum.
+          if (fieldName.text !== "kind") {
+            errors.push({
+              token: fieldName,
+              expected: '"kind"',
+            });
+            return undefined;
+          }
+          enumRef = currentType;
+          currentType = {
+            kind: "primitive",
+            primitive: "string",
+          };
         }
-        struct = this.recordMap.get(fieldType.key)!.record;
       }
-      const lastFieldName = fieldNames.at(-1)!;
-      const lastField = findFieldOrError(struct, lastFieldName);
-      if (!lastField) {
-        return;
-      }
-      const keyType = lastField.type!;
-      if (
-        keyType.kind === "primitive" ||
-        (keyType.kind === "record" && keyType.recordType === "enum")
-      ) {
-        key.keyType = keyType;
-      } else {
+      if (currentType.kind !== "primitive") {
         errors.push({
-          token: lastFieldName,
-          message: "Does not have primitive or enum type",
+          token: fieldNames.at(-1)!,
+          message: "Does not have primitive type",
         });
         return;
       }
+      // If the last field name of the `kind` field of an enum, we store a
+      // reference to the enum in the `keyType` field of the array type.
+      key.keyType = enumRef || currentType;
     };
 
     const traverseType = (type: MutableResolvedType): void => {
@@ -500,10 +507,20 @@ export class ModuleSet {
           });
           return false;
         }
-        value.items.forEach((v) =>
-          this.verifyValueType(v, expectedType.item, errors),
-        );
-        value.key = expectedType.key;
+        let allGood = true;
+        for (const v of value.items) {
+          if (!this.verifyValueType(v, expectedType.item, errors)) {
+            allGood = false;
+          }
+        }
+        if (!allGood) {
+          return false;
+        }
+        const { key } = expectedType;
+        value.key = key;
+        if (key) {
+          validateKeyedItems(value.items, key, errors);
+        }
         return true;
       }
       case "record": {
@@ -547,14 +564,14 @@ export class ModuleSet {
       if (!field || field.kind !== "field") {
         errors.push({
           token: token,
-          message: `field not found in enum ${expectedEnum.name.text}`,
+          message: `Field not found in enum ${expectedEnum.name.text}`,
         });
         return false;
       }
       if (field.type) {
         errors.push({
           token: token,
-          message: "refers to a value field",
+          message: "Refers to a value field",
         });
         return false;
       }
@@ -572,7 +589,7 @@ export class ModuleSet {
       if (!kindEntry) {
         errors.push({
           token: token,
-          message: "missing entry: kind",
+          message: "Missing entry: kind",
         });
         return false;
       }
@@ -593,14 +610,14 @@ export class ModuleSet {
       if (!field || field.kind !== "field") {
         errors.push({
           token: kindValueToken,
-          message: `field not found in enum ${expectedEnum.name.text}`,
+          message: `Field not found in enum ${expectedEnum.name.text}`,
         });
         return false;
       }
       if (!field.type) {
         errors.push({
           token: kindValueToken,
-          message: "refers to a constant field",
+          message: "Refers to a constant field",
         });
         return false;
       }
@@ -608,7 +625,7 @@ export class ModuleSet {
       if (!enumValue) {
         errors.push({
           token: token,
-          message: "missing entry: value",
+          message: "Missing entry: value",
         });
         return false;
       }
@@ -619,7 +636,7 @@ export class ModuleSet {
         const extraEntry = extraEntries[0]!;
         errors.push({
           token: extraEntry.name,
-          message: "extraneous entry",
+          message: "Extraneous entry",
         });
         return false;
       }
@@ -653,7 +670,7 @@ export class ModuleSet {
       if (!field || field.kind !== "field") {
         errors.push({
           token: fieldEntry.name,
-          message: `field not found in enum ${expectedStruct.name.text}`,
+          message: `Field not found in enum ${expectedStruct.name.text}`,
         });
         return false;
       }
@@ -683,6 +700,87 @@ export class ModuleSet {
 
   get errors(): readonly SoiaError[] {
     return this.mutableErrors;
+  }
+}
+
+/**
+ * If the array type is keyed, the array value must satisfy two conditions.
+ * First: the key field of every item must be set.
+ * Second: not two items can have the same key.
+ */
+function validateKeyedItems(
+  items: readonly Value[],
+  fieldPath: FieldPath,
+  errors: ErrorSink,
+): void {
+  const { keyType, fieldNames } = fieldPath;
+  const tryExtractKeyFromItem = (item: Value): Value | undefined => {
+    let value = item;
+    for (const fieldName of fieldNames) {
+      if (value.kind === "literal" && fieldName.text === "kind") {
+        // An enum constant.
+        return value;
+      }
+      if (value.kind !== "object") {
+        // An error was already registered.
+        return undefined;
+      }
+      const entry = value.entries[fieldName.text];
+      if (!entry) {
+        errors.push({
+          token: value.token,
+          message: `Missing entry: ${fieldName.text}`,
+        });
+        return;
+      }
+      value = entry.value;
+    }
+    return value;
+  };
+
+  const keyIdentityToKeys = new Map<string, Value[]>();
+  for (const item of items) {
+    const key = tryExtractKeyFromItem(item);
+    if (!key) {
+      return;
+    }
+    if (key.kind !== "literal") {
+      // Cannot happen.
+      return;
+    }
+    let keyIdentity: string;
+    const keyToken = key.token.text;
+    if (keyType.kind === "primitive") {
+      const { primitive } = keyType;
+      if (!valueHasPrimitiveType(keyToken, primitive)) {
+        continue;
+      }
+      keyIdentity = literalValueToIdentity(keyToken, primitive);
+    } else {
+      // The key is an enum, use the enum field name as the key identity.
+      if (!isStringLiteral(keyToken)) {
+        continue;
+      }
+      keyIdentity = unquoteAndUnescape(keyToken);
+    }
+    if (keyIdentityToKeys.has(keyIdentity)) {
+      keyIdentityToKeys.get(keyIdentity)!.push(key);
+    } else {
+      keyIdentityToKeys.set(keyIdentity, [key]);
+    }
+  }
+
+  // Verify that every key in `keyIdentityToItems` has a single value.
+  for (const duplicateKeys of keyIdentityToKeys.values()) {
+    if (duplicateKeys.length <= 1) {
+      continue;
+    }
+    for (const key of duplicateKeys) {
+      errors.push({
+        token: key.token,
+        message: "Duplicate key",
+      });
+    }
   }
 }
 
@@ -904,7 +1002,7 @@ function ensureAllImportsAreUsed(
     if (!usedImports.has(declaration.name.text)) {
       errors.push({
         token: declaration.name,
-        message: "unused import",
+        message: "Unused import",
       });
     }
   }

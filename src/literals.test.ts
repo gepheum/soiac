@@ -1,5 +1,6 @@
 import {
   isStringLiteral,
+  literalValueToIdentity,
   unquoteAndUnescape,
   valueHasPrimitiveType,
 } from "./literals.js";
@@ -93,6 +94,53 @@ describe("literals", () => {
       expect(valueHasPrimitiveType("'foo'", "string")).toBe(true);
       expect(valueHasPrimitiveType('"foo"', "string")).toBe(true);
       expect(valueHasPrimitiveType("3", "string")).toBe(false);
+    });
+  });
+
+  describe("#literalValueToIdentity()", () => {
+    it("works with bool", () => {
+      expect(literalValueToIdentity("true", "bool")).toBe("true");
+      expect(literalValueToIdentity("false", "bool")).toBe("false");
+    });
+
+    it("works with bytes", () => {
+      expect(literalValueToIdentity("'09afAF'", "bytes")).toBe("09AFAF");
+    });
+
+    it("works with timestamp", () => {
+      expect(literalValueToIdentity("'2023-12-25Z'", "timestamp")).toBe(
+        "1703462400000",
+      );
+    });
+
+    it("works with int32", () => {
+      expect(literalValueToIdentity("-02147483648", "int32")).toBe(
+        "-2147483648",
+      );
+    });
+
+    it("works with int64", () => {
+      expect(literalValueToIdentity("-09223372036854775808", "int64")).toBe(
+        "-9223372036854775808",
+      );
+    });
+
+    it("works with uint64", () => {
+      expect(literalValueToIdentity("18446744073709551615", "uint64")).toBe(
+        "18446744073709551615",
+      );
+    });
+
+    it("works with float32", () => {
+      expect(literalValueToIdentity("3.140", "float32")).toBe("3.14");
+    });
+
+    it("works with float64", () => {
+      expect(literalValueToIdentity("3.140", "float64")).toBe("3.14");
+    });
+
+    it("works with string", () => {
+      expect(literalValueToIdentity("'foo'", "string")).toBe("foo");
     });
   });
 });

@@ -73,12 +73,14 @@ export type Casing =
 export type SoiaError =
   | {
       readonly token: Token;
+      /** Convention: starts with a capital letter. */
       readonly message: string;
       readonly expected?: undefined;
       readonly errorIsInOtherModule?: true;
     }
   | {
       readonly token: Token;
+      /** Convention: starts with a lowercase letter. */
       readonly expected: string;
       readonly message?: undefined;
       readonly errorIsInOtherModule?: undefined;
@@ -156,8 +158,13 @@ export interface ResolvedRecordRef {
 export interface MutableFieldPath {
   /** The "|" token. */
   readonly pipeToken: Token;
-  /** A non-empty sequence of field names. */
+  /**
+   * A non-empty sequence of field names.
+   * If the key type is an enum type, the last field name is guaranteed to be
+   * "kind".
+   */
   readonly fieldNames: readonly Token[];
+  /** The type used to key every item: either a primitive or an enum. */
   keyType: PrimitiveType | ResolvedRecordRef;
 }
 

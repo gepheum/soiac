@@ -368,7 +368,7 @@ describe("module set", () => {
 
           struct Foo {
             users: [Outer.User|key];
-            users_by_enum: [Outer.User|key_enum];
+            users_by_enum: [Outer.User|key_enum.kind];
             user_histories: [Outer.UserHistory|user.key];
           }
         `,
@@ -410,7 +410,7 @@ describe("module set", () => {
                     },
                     key: {
                       pipeToken: { text: "|" },
-                      fieldNames: [{ text: "key_enum" }],
+                      fieldNames: [{ text: "key_enum" }, { text: "kind" }],
                       keyType: {
                         kind: "record",
                         key: "path/to/module:141",
@@ -471,6 +471,63 @@ describe("module set", () => {
     });
 
     it("item must have struct type", () => {
+      // This is actually verified at parsing time.
+
+      const fakeFileReader = new FakeFileReader();
+      fakeFileReader.pathToCode.set(
+        "path/to/root/path/to/module",
+        `
+          struct Foo {
+            users: [string|key];
+          }
+        `,
+      );
+
+      const moduleSet = new ModuleSet(fakeFileReader, "path/to/root");
+      const actual = moduleSet.parseAndResolve("path/to/module");
+
+      expect(actual).toMatch({
+        errors: [
+          {
+            token: {
+              text: "|",
+            },
+            expected: '"]"',
+          },
+        ],
+      });
+    });
+
+    it("must have struct type", () => {
+      const fakeFileReader = new FakeFileReader();
+      fakeFileReader.pathToCode.set(
+        "path/to/root/path/to/module",
+        `
+          struct User {
+            key: string;
+          }
+          struct Foo {
+            users: [User|key.bar];
+          }
+        `,
+      );
+
+      const moduleSet = new ModuleSet(fakeFileReader, "path/to/root");
+      const actual = moduleSet.parseAndResolve("path/to/module");
+
+      expect(actual).toMatch({
+        errors: [
+          {
+            token: {
+              text: "key",
+            },
+            message: "Must have struct type",
+          },
+        ],
+      });
+    });
+
+    it("if enum then expects kind", () => {
       const fakeFileReader = new FakeFileReader();
       fakeFileReader.pathToCode.set(
         "path/to/root/path/to/module",
@@ -489,9 +546,9 @@ describe("module set", () => {
         errors: [
           {
             token: {
-              text: "|",
+              text: "key",
             },
-            message: "Item must have struct type",
+            expected: '"kind"',
           },
         ],
       });
@@ -518,7 +575,7 @@ describe("module set", () => {
             token: {
               text: "key",
             },
-            message: "Does not have struct type",
+            message: "Must have struct type",
           },
         ],
       });
@@ -546,7 +603,7 @@ describe("module set", () => {
             token: {
               text: "key",
             },
-            message: "Does not have primitive or enum type",
+            message: "Does not have primitive type",
           },
         ],
       });
@@ -1098,6 +1155,56 @@ describe("module set", () => {
       });
     });
 
+    it("with indexed array", () => {
+      const fakeFileReader = new FakeFileReader();
+      fakeFileReader.pathToCode.set(
+        "path/to/root/path/to/module",
+        `
+        enum Enum {
+          A;
+          B;
+          c: string;
+        }
+        struct EnumWrapper {
+          e: Enum;
+        }
+        struct Bar {
+          x: int32;
+        }
+        struct Foo {
+          enums: [EnumWrapper|e.kind];
+          bars: [Bar|x];
+        }
+
+        const FOO: Foo = {
+          enums: [
+            {
+              e: "A",
+            },
+            {
+              e: "B",
+            },
+            {
+              e: {
+                kind: "c",
+                value: "v",
+              },
+            },
+          ],
+          bars: [
+            {
+              x: 0,
+            },
+          ],
+        };
+      `,
+      );
+      const moduleSet = new ModuleSet(fakeFileReader, "path/to/root");
+      const actual = moduleSet.parseAndResolve("path/to/module");
+
+      expect(actual).toMatch({ errors: [] });
+    });
+
     it("type error", () => {
       const fakeFileReader = new FakeFileReader();
       fakeFileReader.pathToCode.set(
@@ -1126,6 +1233,97 @@ describe("module set", () => {
               text: "255.0",
             },
             expected: "int32",
+          },
+        ],
+      });
+    });
+
+    it("key missing from indexed array", () => {
+      const fakeFileReader = new FakeFileReader();
+      fakeFileReader.pathToCode.set(
+        "path/to/root/path/to/module",
+        `
+        enum Enum {
+          A;
+          B;
+        }
+        struct EnumWrapper {
+          e: Enum;
+        }
+        struct Foo {
+          enums: [EnumWrapper|e.kind];
+        }
+
+        const FOO: Foo = {
+          enums: [
+            {
+              e: "A",
+            },
+            {
+            },
+          ],
+        };
+      `,
+      );
+      const moduleSet = new ModuleSet(fakeFileReader, "path/to/root");
+      const actual = moduleSet.parseAndResolve("path/to/module");
+
+      expect(actual).toMatch({
+        errors: [
+          {
+            token: {
+              text: "{",
+            },
+            message: "missing entry: e",
+          },
+        ],
+      });
+    });
+
+    it("duplicate key in indexed array", () => {
+      const fakeFileReader = new FakeFileReader();
+      fakeFileReader.pathToCode.set(
+        "path/to/root/path/to/module",
+        `
+        enum Enum {
+          A;
+          B;
+        }
+        struct EnumWrapper {
+          e: Enum;
+        }
+        struct Foo {
+          enums: [EnumWrapper|e.kind];
+        }
+
+        const FOO: Foo = {
+          enums: [
+            {
+              e: "A",
+            },
+            {
+              e: 'A',
+            },
+          ],
+        };
+      `,
+      );
+      const moduleSet = new ModuleSet(fakeFileReader, "path/to/root");
+      const actual = moduleSet.parseAndResolve("path/to/module");
+
+      expect(actual).toMatch({
+        errors: [
+          {
+            token: {
+              text: '"A"',
+            },
+            message: "Duplicate key",
+          },
+          {
+            token: {
+              text: "'A'",
+            },
+            message: "Duplicate key",
           },
         ],
       });

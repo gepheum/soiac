@@ -65,3 +65,32 @@ function isIntLiteral(token: string, min: bigint, max: bigint): boolean {
   const value = BigInt(token);
   return min <= value && value <= max;
 }
+
+/**
+ * Assuming `token` is a literal value of primitive type, returns a string which
+ * uniquely identifies the value within the primitive type. The behavior is
+ * undefined if `token` does not match `type`.
+ * Use this function to check if two literal values are actually equal.
+ */
+export function literalValueToIdentity(token: string, type: Primitive): string {
+  switch (type) {
+    case "bool":
+      return token;
+    case "bytes":
+      return unquoteAndUnescape(token).toUpperCase();
+    case "timestamp": {
+      const dateTime = unquoteAndUnescape(token);
+      return String(new Date(dateTime).valueOf());
+    }
+    case "int32":
+    case "float32":
+    case "float64":
+      return String(Number(token));
+    case "int64":
+      return String(BigInt(token));
+    case "uint64":
+      return String(BigInt(token));
+    case "string":
+      return unquoteAndUnescape(token);
+  }
+}
