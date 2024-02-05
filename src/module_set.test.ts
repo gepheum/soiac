@@ -985,7 +985,7 @@ describe("module set", () => {
           token: {
             text: "Bar",
           },
-          message: "unused import",
+          message: "Unused import",
         },
       ],
     });
@@ -1274,7 +1274,7 @@ describe("module set", () => {
             token: {
               text: "{",
             },
-            message: "missing entry: e",
+            message: "Missing entry: e",
           },
         ],
       });
