@@ -189,14 +189,18 @@ class RecordBuilder {
     let numbers: readonly number[] = [];
     let newNumbering = this.numbering;
 
+    // Unless explicitly specified, the number assigned to the first field of an
+    // enum is 1.
+    const nextImplicitNumber =
+      this.numbers.size + (this.recordType === "enum" ? 1 : 0);
+
     switch (declaration.kind) {
       case "field": {
         nameToken = declaration.name;
         errorToken = nameToken;
         newNumbering = declaration.number < 0 ? "implicit" : "explicit";
         if (declaration.number < 0) {
-          const number = this.numbers.size;
-          declaration = { ...declaration, number: number };
+          declaration = { ...declaration, number: nextImplicitNumber };
         }
         numbers = [declaration.number];
         break;
@@ -213,7 +217,7 @@ class RecordBuilder {
           numbers = declaration.numbers;
         } else {
           newNumbering = "implicit";
-          numbers = [this.numbers.size];
+          numbers = [nextImplicitNumber];
         }
       }
     }
@@ -251,6 +255,12 @@ class RecordBuilder {
         });
         this.numbering = "broken";
         return;
+      } else if (number === 0 && this.recordType === "enum") {
+        this.errors.push({
+          token: errorToken,
+          message: "Number 0 is reserved for UNKNOWN field",
+        });
+        return;
       }
       this.numbers.add(number);
     }
@@ -262,16 +272,20 @@ class RecordBuilder {
   }
 
   build(): MutableRecord {
-    // Make sure that all field numbers are consecutive starting from 0.
-    for (let i = 0; i < this.numbers.size; ++i) {
-      if (this.numbers.has(i)) {
-        continue;
+    // If the record is a struct, make sure that all field numbers are
+    // consecutive starting from 0. The fields of an enum, on the other hand,
+    // can be sparse.
+    if (this.recordType === "struct") {
+      for (let i = 0; i < this.numbers.size; ++i) {
+        if (this.numbers.has(i)) {
+          continue;
+        }
+        this.errors.push({
+          token: this.recordName,
+          message: `Missing field number ${i}`,
+        });
+        break;
       }
-      this.errors.push({
-        token: this.recordName,
-        message: `Missing field number ${i}`,
-      });
-      break;
     }
 
     const declarations = Object.values(this.nameToDeclaration);
@@ -281,14 +295,6 @@ class RecordBuilder {
     const nestedRecords = declarations.filter(
       (d): d is MutableRecord => d.kind === "record",
     );
-
-    // Enums must have at least one field.
-    if (this.recordType === "enum" && fields.length <= 0) {
-      this.errors.push({
-        token: this.recordName,
-        message: `Enum cannot be empty`,
-      });
-    }
 
     const { recordName } = this;
     const key = `${recordName.line.modulePath}:${recordName.position}`;

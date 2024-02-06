@@ -222,11 +222,6 @@ export class ModuleSet {
           this.validateArrayKeys(type, errors);
         }
       }
-      if (record.record.recordType === "enum") {
-        // Verifies that the default value of the enum has a finite
-        // representation.
-        this.verifyEnumDefaultConstraint(record.record, errors);
-      }
     }
     // Resolve every request/response type of every method in the module.
     // Store the result in the Procedure object.
@@ -448,42 +443,6 @@ export class ModuleSet {
     };
 
     traverseType(topLevelType);
-  }
-
-  /**
-   * Verifies that the default value of the enum has a finite representation.
-   *
-   * @example enum with an infinite representation:
-   *   enum A { f: B; }
-   *   enum B { f: C; }
-   *   enum C { f: A; }
-   */
-  private verifyEnumDefaultConstraint(
-    record: MutableRecord,
-    errors: ErrorSink,
-  ): void {
-    const originalRecord = record;
-    const traversedRecords = new Set<RecordKey>();
-    while (true) {
-      traversedRecords.add(record.key);
-      const zeroField = record.fields.find((f) => f.number === 0)!;
-      const { type } = zeroField;
-      if (!type || type.kind !== "record" || type.recordType !== "enum") {
-        break;
-      }
-      if (traversedRecords.has(type.key)) {
-        errors.push({
-          token: originalRecord.name,
-          message: "Default value has an infinite representation",
-        });
-        break;
-      }
-      const newRecord = this.recordMap.get(type.key);
-      if (!newRecord) {
-        break;
-      }
-      record = newRecord.record;
-    }
   }
 
   private verifyValueType(

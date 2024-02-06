@@ -651,44 +651,6 @@ describe("module set", () => {
     });
   });
 
-  it("enum default must have finite representation", () => {
-    const fakeFileReader = new FakeFileReader();
-    fakeFileReader.pathToCode.set(
-      "path/to/root/path/to/module",
-      `
-        enum A { f: B; }
-        enum B { f: C; }
-        enum C { f: B; }
-      `,
-    );
-
-    const moduleSet = new ModuleSet(fakeFileReader, "path/to/root");
-    const actual = moduleSet.parseAndResolve("path/to/module");
-
-    expect(actual).toMatch({
-      errors: [
-        {
-          token: {
-            text: "A",
-          },
-          message: "Default value has an infinite representation",
-        },
-        {
-          token: {
-            text: "B",
-          },
-          message: "Default value has an infinite representation",
-        },
-        {
-          token: {
-            text: "C",
-          },
-          message: "Default value has an infinite representation",
-        },
-      ],
-    });
-  });
-
   describe("type resolver", () => {
     it("cannot find name", () => {
       const fakeFileReader = new FakeFileReader();

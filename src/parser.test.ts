@@ -108,6 +108,7 @@ describe("module parser", () => {
     const actualModule = parse(`
       enum Enum {
         CONSTANT;
+        removed;
         value_field: bool;
       }`);
 
@@ -126,14 +127,14 @@ describe("module parser", () => {
                 name: {
                   text: "CONSTANT",
                 },
-                number: 0,
+                number: 1,
               },
               value_field: {
                 kind: "field",
                 name: {
                   text: "value_field",
                 },
-                number: 1,
+                number: 3,
                 unresolvedType: {
                   kind: "primitive",
                 },
@@ -413,6 +414,46 @@ describe("module parser", () => {
     });
   });
 
+  it("enum with sparse numbers", () => {
+    const actualModule = parse(`
+      enum Enum {
+        CONSTANT = 2;
+        removed 10, 11;
+        value_field: bool = 4;
+      }`);
+
+    expect(actualModule).toMatch({
+      result: {
+        nameToDeclaration: {
+          Enum: {
+            kind: "record",
+            name: {
+              text: "Enum",
+            },
+            recordType: "enum",
+            nameToDeclaration: {
+              CONSTANT: {
+                kind: "field",
+                name: {
+                  text: "CONSTANT",
+                },
+                number: 2,
+              },
+              value_field: {
+                kind: "field",
+                name: {
+                  text: "value_field",
+                },
+                number: 4,
+              },
+            },
+          },
+        },
+      },
+      errors: [],
+    });
+  });
+
   it("struct with duplicate identifier", () => {
     const actualModule = parse(`
       struct A {
@@ -575,8 +616,8 @@ describe("module parser", () => {
   it("enum with invalid casing", () => {
     const actualModule = parse(`
       enum a {
-        foo = 0;
-        BAR: string = 1;
+        foo = 1;
+        BAR: string = 100;
       }`);
 
     expect(actualModule).toMatch({
@@ -598,25 +639,6 @@ describe("module parser", () => {
             text: "BAR",
           },
           expected: "lower_underscore",
-        },
-      ],
-    });
-  });
-
-  it("enum with missing number", () => {
-    const actualModule = parse(`
-      enum A {
-        A = 2;
-        b: bool = 0;
-      }`);
-
-    expect(actualModule).toMatch({
-      errors: [
-        {
-          token: {
-            text: "A",
-          },
-          message: "Missing field number 1",
         },
       ],
     });
@@ -699,12 +721,54 @@ describe("module parser", () => {
     }`);
 
     expect(actualModule).toMatch({
+      result: {
+        kind: "module",
+        path: "path/to/module",
+        nameToDeclaration: {
+          Enum: {
+            kind: "record",
+            recordType: "enum",
+            name: {
+              text: "Enum",
+            },
+          },
+        },
+      },
+      errors: [],
+    });
+  });
+
+  it("enum with field number set to zero", () => {
+    const actualModule = parse(`
+    enum Enum {
+      A = 0;
+    }`);
+
+    expect(actualModule).toMatch({
       errors: [
         {
           token: {
-            text: "Enum",
+            text: "A",
           },
-          message: "Enum cannot be empty",
+          message: "Number 0 is reserved for UNKNOWN field",
+        },
+      ],
+    });
+  });
+
+  it("enum with zero field number removed", () => {
+    const actualModule = parse(`
+    enum Enum {
+      removed 0;
+    }`);
+
+    expect(actualModule).toMatch({
+      errors: [
+        {
+          token: {
+            text: "removed",
+          },
+          message: "Number 0 is reserved for UNKNOWN field",
         },
       ],
     });
