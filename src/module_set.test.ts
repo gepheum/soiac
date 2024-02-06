@@ -369,7 +369,7 @@ describe("module set", () => {
           struct Foo {
             users: [Outer.User|key];
             users_by_enum: [Outer.User|key_enum.kind];
-            user_histories: [Outer.UserHistory|user.key];
+            user_histories: [Outer.UserHistory|user.key]?;
           }
         `,
       );
@@ -421,17 +421,20 @@ describe("module set", () => {
                 {
                   name: { text: "user_histories" },
                   type: {
-                    kind: "array",
-                    item: {
-                      kind: "record",
-                      key: "path/to/module:204",
-                    },
-                    key: {
-                      pipeToken: { text: "|" },
-                      fieldNames: [{ text: "user" }, { text: "key" }],
-                      keyType: {
-                        kind: "primitive",
-                        primitive: "string",
+                    kind: "nullable",
+                    value: {
+                      kind: "array",
+                      item: {
+                        kind: "record",
+                        key: "path/to/module:204",
+                      },
+                      key: {
+                        pipeToken: { text: "|" },
+                        fieldNames: [{ text: "user" }, { text: "key" }],
+                        keyType: {
+                          kind: "primitive",
+                          primitive: "string",
+                        },
                       },
                     },
                   },
@@ -1117,7 +1120,7 @@ describe("module set", () => {
       });
     });
 
-    it("with indexed array", () => {
+    it("with keyed array", () => {
       const fakeFileReader = new FakeFileReader();
       fakeFileReader.pathToCode.set(
         "path/to/root/path/to/module",
@@ -1135,7 +1138,7 @@ describe("module set", () => {
         }
         struct Foo {
           enums: [EnumWrapper|e.kind];
-          bars: [Bar|x];
+          bars: [Bar|x]?;
         }
 
         const FOO: Foo = {
@@ -1164,7 +1167,9 @@ describe("module set", () => {
       const moduleSet = new ModuleSet(fakeFileReader, "path/to/root");
       const actual = moduleSet.parseAndResolve("path/to/module");
 
-      expect(actual).toMatch({ errors: [] });
+      expect(actual).toMatch({
+        errors: [],
+      });
     });
 
     it("type error", () => {
@@ -1200,7 +1205,7 @@ describe("module set", () => {
       });
     });
 
-    it("key missing from indexed array", () => {
+    it("key missing from keyed array", () => {
       const fakeFileReader = new FakeFileReader();
       fakeFileReader.pathToCode.set(
         "path/to/root/path/to/module",
@@ -1242,7 +1247,7 @@ describe("module set", () => {
       });
     });
 
-    it("duplicate key in indexed array", () => {
+    it("duplicate key in keyed array", () => {
       const fakeFileReader = new FakeFileReader();
       fakeFileReader.pathToCode.set(
         "path/to/root/path/to/module",
