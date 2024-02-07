@@ -750,7 +750,7 @@ describe("module parser", () => {
           token: {
             text: "A",
           },
-          message: "Number 0 is reserved for UNSPECIFIED field",
+          message: "Number 0 is reserved for UNKNOWN field",
         },
       ],
     });
@@ -768,7 +768,7 @@ describe("module parser", () => {
           token: {
             text: "removed",
           },
-          message: "Number 0 is reserved for UNSPECIFIED field",
+          message: "Number 0 is reserved for UNKNOWN field",
         },
       ],
     });

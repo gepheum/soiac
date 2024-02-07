@@ -258,7 +258,7 @@ class RecordBuilder {
       } else if (number === 0 && this.recordType === "enum") {
         this.errors.push({
           token: errorToken,
-          message: "Number 0 is reserved for UNSPECIFIED field",
+          message: "Number 0 is reserved for UNKNOWN field",
         });
         return;
       }
