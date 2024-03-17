@@ -715,6 +715,7 @@ function parseConstant(it: TokenIterator): MutableConstant | null {
     unresolvedType: type,
     type: undefined,
     value: value,
+    valueAsDenseJson: undefined,
   };
 }
 

@@ -309,6 +309,7 @@ export interface MutableConstant<Mutable extends boolean = true> {
   readonly unresolvedType: UnresolvedType;
   type: ResolvedType<Mutable> | undefined;
   readonly value: Value;
+  valueAsDenseJson: DenseJson | undefined;
 }
 
 export type Constant<Mutable extends boolean = boolean> = //
@@ -372,6 +373,9 @@ export type Value<Mutable extends boolean = boolean> =
   | LiteralValue<Mutable>;
 
 export type MutableValue = Value<true>;
+
+/** Result of serializing a Soia value to dense JSON format. */
+export type DenseJson = null | boolean | number | string | readonly DenseJson[];
 
 /** A declaration which can appear at the top-level of a module. */
 export type ModuleLevelDeclaration<Mutable extends boolean = boolean> =

@@ -1,5 +1,6 @@
 import {
   isStringLiteral,
+  literalValueToDenseJson,
   literalValueToIdentity,
   unquoteAndUnescape,
   valueHasPrimitiveType,
@@ -141,6 +142,53 @@ describe("literals", () => {
 
     it("works with string", () => {
       expect(literalValueToIdentity("'foo'", "string")).toBe("foo");
+    });
+  });
+
+  describe("#literalValueToDenseJson()", () => {
+    it("works with bool", () => {
+      expect(literalValueToDenseJson("true", "bool")).toBe(true);
+      expect(literalValueToDenseJson("false", "bool")).toBe(false);
+    });
+
+    it("works with bytes", () => {
+      expect(literalValueToDenseJson("'09afAF'", "bytes")).toBe("09AFAF");
+    });
+
+    it("works with timestamp", () => {
+      expect(literalValueToDenseJson("'2023-12-25Z'", "timestamp")).toBe(
+        1703462400000,
+      );
+    });
+
+    it("works with int32", () => {
+      expect(literalValueToDenseJson("-02147483648", "int32")).toBe(
+        -2147483648,
+      );
+    });
+
+    it("works with int64", () => {
+      expect(literalValueToDenseJson("-09223372036854775808", "int64")).toBe(
+        "-9223372036854775808",
+      );
+    });
+
+    it("works with uint64", () => {
+      expect(literalValueToDenseJson("18446744073709551615", "uint64")).toBe(
+        "18446744073709551615",
+      );
+    });
+
+    it("works with float32", () => {
+      expect(literalValueToDenseJson("3.140", "float32")).toBe(3.14);
+    });
+
+    it("works with float64", () => {
+      expect(literalValueToDenseJson("3.140", "float64")).toBe(3.14);
+    });
+
+    it("works with string", () => {
+      expect(literalValueToDenseJson("'foo'", "string")).toBe("foo");
     });
   });
 });

@@ -1,6 +1,7 @@
 import { FileReader } from "./io.js";
 import {
   isStringLiteral,
+  literalValueToDenseJson,
   literalValueToIdentity,
   unquoteAndUnescape,
   valueHasPrimitiveType,
@@ -8,8 +9,8 @@ import {
 import { parseModule } from "./parser.js";
 import { tokenizeModule } from "./tokenizer.js";
 import type {
+  DenseJson,
   ErrorSink,
-  Field,
   FieldPath,
   Import,
   Module,
@@ -249,7 +250,8 @@ export class ModuleSet {
       const type = typeResolver.resolve(unresolvedType, "top-level");
       if (type) {
         this.validateArrayKeys(type, errors);
-        this.verifyValueType(constant.value, type, errors);
+        constant.valueAsDenseJson = //
+          this.valueToDenseJson(constant.value, type, errors);
         constant.type = type;
       }
     }
@@ -445,18 +447,18 @@ export class ModuleSet {
     traverseType(topLevelType);
   }
 
-  private verifyValueType(
+  private valueToDenseJson(
     value: MutableValue,
     expectedType: ResolvedType,
     errors: ErrorSink,
-  ): boolean {
+  ): DenseJson | undefined {
     switch (expectedType.kind) {
       case "nullable": {
         if (value.kind === "literal" && value.token.text === "null") {
           value.type = { kind: "null" };
-          return true;
+          return null;
         }
-        return this.verifyValueType(value, expectedType.value, errors);
+        return this.valueToDenseJson(value, expectedType.value, errors);
       }
       case "array": {
         if (value.kind !== "array") {
@@ -464,56 +466,125 @@ export class ModuleSet {
             token: value.token,
             expected: "array",
           });
-          return false;
+          return undefined;
         }
+        const json: DenseJson[] = [];
         let allGood = true;
-        for (const v of value.items) {
-          if (!this.verifyValueType(v, expectedType.item, errors)) {
+        for (const item of value.items) {
+          const itemJson = //
+            this.valueToDenseJson(item, expectedType.item, errors);
+          if (itemJson !== undefined) {
+            json.push(itemJson);
+          } else {
+            // Even if we could return now, better to verify the type of the
+            // other items.
             allGood = false;
           }
         }
         if (!allGood) {
-          return false;
+          return undefined;
         }
         const { key } = expectedType;
         value.key = key;
         if (key) {
           validateKeyedItems(value.items, key, errors);
         }
-        return true;
+        return json;
       }
       case "record": {
         const record = this.recordMap.get(expectedType.key);
         if (!record) {
           // An error was already registered.
-          return false;
+          return undefined;
         }
         return record.record.recordType === "struct"
-          ? this.verifyValueStructType(value, record.record, errors)
-          : this.verifyValueEnumType(value, record.record, errors);
+          ? this.structValueToDenseJson(value, record.record, errors)
+          : this.enumValueToDenseJson(value, record.record, errors);
       }
       case "primitive": {
+        const { token } = value;
+        const { primitive } = expectedType;
         if (
           value.kind !== "literal" ||
-          !valueHasPrimitiveType(value.token.text, expectedType.primitive)
+          !valueHasPrimitiveType(token.text, expectedType.primitive)
         ) {
           errors.push({
             token: value.token,
             expected: expectedType.primitive,
           });
-          return false;
+          return undefined;
         }
         value.type = expectedType;
-        return true;
+        return literalValueToDenseJson(token.text, expectedType.primitive);
       }
     }
   }
 
-  private verifyValueEnumType(
+  private structValueToDenseJson(
+    value: MutableValue,
+    expectedStruct: Record,
+    errors: ErrorSink,
+  ): DenseJson | undefined {
+    const { token } = value;
+    if (value.kind !== "object") {
+      errors.push({
+        token: token,
+        expected: "object",
+      });
+      return undefined;
+    }
+    const json: DenseJson[] = [];
+    let allGood = true;
+    for (const [fieldName, fieldEntry] of Object.entries(value.entries)) {
+      const field = expectedStruct.nameToDeclaration[fieldName];
+      if (!field || field.kind !== "field") {
+        errors.push({
+          token: fieldEntry.name,
+          message: `Field not found in struct ${expectedStruct.name.text}`,
+        });
+        allGood = false;
+        continue;
+      }
+      if (!field.type) {
+        allGood = false;
+        continue;
+      }
+      const { type } = field;
+      const valueJson = this.valueToDenseJson(fieldEntry.value, type, errors);
+      if (valueJson === undefined) {
+        allGood = false;
+        continue;
+      }
+      if (
+        !valueJson ||
+        (Array.isArray(valueJson) && !valueJson.length) ||
+        (type.kind === "primitive" &&
+          (type.primitive === "int64" || type.primitive === "uint64") &&
+          valueJson === "0")
+      ) {
+        // The field has a default value.
+        continue;
+      }
+      json[field.number] = valueJson;
+    }
+    if (!allGood) {
+      return undefined;
+    }
+    value.type = expectedStruct.key;
+    // Fill missing slots in the JSON array with zeros.
+    for (let i = 0; i < json.length; ++i) {
+      if (json[i] === undefined) {
+        json[i] = "0";
+      }
+    }
+    return json;
+  }
+
+  private enumValueToDenseJson(
     value: MutableValue,
     expectedEnum: Record,
     errors: ErrorSink,
-  ): boolean {
+  ): DenseJson | undefined {
     const { token } = value;
     if (value.kind === "literal" && isStringLiteral(token.text)) {
       // The value is a string.
@@ -525,19 +596,20 @@ export class ModuleSet {
           token: token,
           message: `Field not found in enum ${expectedEnum.name.text}`,
         });
-        return false;
+        return undefined;
       }
       if (field.type) {
         errors.push({
           token: token,
           message: "Refers to a value field",
         });
-        return false;
+        return undefined;
       }
       value.type = {
         kind: "enum",
         key: expectedEnum.key,
       };
+      return field.number;
     } else if (value.kind === "object") {
       // The value is an object. It must have exactly two entries:
       //   · 'kind' must match the name of one of the value fields defined in
@@ -550,7 +622,7 @@ export class ModuleSet {
           token: token,
           message: "Missing entry: kind",
         });
-        return false;
+        return undefined;
       }
       delete entries.kind;
       const kindValueToken = kindEntry.value.token;
@@ -562,7 +634,7 @@ export class ModuleSet {
           token: kindValueToken,
           expected: "string",
         });
-        return false;
+        return undefined;
       }
       const fieldName = unquoteAndUnescape(kindValueToken.text);
       const field = expectedEnum.nameToDeclaration[fieldName];
@@ -571,14 +643,14 @@ export class ModuleSet {
           token: kindValueToken,
           message: `Field not found in enum ${expectedEnum.name.text}`,
         });
-        return false;
+        return undefined;
       }
       if (!field.type) {
         errors.push({
           token: kindValueToken,
           message: "Refers to a constant field",
         });
-        return false;
+        return undefined;
       }
       const enumValue = entries.value;
       if (!enumValue) {
@@ -586,10 +658,14 @@ export class ModuleSet {
           token: token,
           message: "Missing entry: value",
         });
-        return false;
+        return undefined;
       }
       delete entries.value;
-      this.verifyValueType(enumValue.value, field.type, errors);
+      const valueJson = //
+        this.valueToDenseJson(enumValue.value, field.type, errors);
+      if (valueJson === undefined) {
+        return undefined;
+      }
       const extraEntries = Object.values(entries);
       if (extraEntries.length !== 0) {
         const extraEntry = extraEntries[0]!;
@@ -597,49 +673,19 @@ export class ModuleSet {
           token: extraEntry.name,
           message: "Extraneous entry",
         });
-        return false;
+        return undefined;
       }
       value.type = expectedEnum.key;
+      // Return an array of length 2.
+      return [field.number, valueJson];
     } else {
       // The value is neither a string nor an object. It can't be of enum type.
       errors.push({
         token: token,
         expected: "string or object",
       });
-      return false;
+      return undefined;
     }
-    return true;
-  }
-
-  private verifyValueStructType(
-    value: MutableValue,
-    expectedStruct: Record,
-    errors: ErrorSink,
-  ): boolean {
-    const { token } = value;
-    if (value.kind !== "object") {
-      errors.push({
-        token: token,
-        expected: "object",
-      });
-      return false;
-    }
-    for (const [fieldName, fieldEntry] of Object.entries(value.entries)) {
-      const field = expectedStruct.nameToDeclaration[fieldName];
-      if (!field || field.kind !== "field") {
-        errors.push({
-          token: fieldEntry.name,
-          message: `Field not found in enum ${expectedStruct.name.text}`,
-        });
-        return false;
-      }
-      if (!field.type) {
-        return false;
-      }
-      this.verifyValueType(fieldEntry.value, field.type, errors);
-    }
-    value.type = expectedStruct.key;
-    return true;
   }
 
   private modules = new Map<string, Result<Module | null>>();

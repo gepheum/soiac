@@ -1092,6 +1092,25 @@ describe("module set", () => {
                 },
                 type: "path/to/module:188",
               },
+              valueAsDenseJson: [
+                [
+                  255,
+                ],
+                [
+                  [
+                    10,
+                    10,
+                  ],
+                  [
+                    20,
+                    10,
+                  ],
+                  [
+                    10,
+                    20,
+                  ],
+                ],
+              ],
             },
             NULL_SHAPE: {
               kind: "constant",
@@ -1112,6 +1131,7 @@ describe("module set", () => {
                   kind: "null",
                 },
               },
+              valueAsDenseJson: null,
             },
           },
           constants: [{}, {}],

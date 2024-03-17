@@ -1,4 +1,4 @@
-import type { Primitive } from "./types.js";
+import type { DenseJson, Primitive } from "./types.js";
 
 export function unquoteAndUnescape(stringLiteral: string): string {
   const unquoted = stringLiteral.slice(1, -1);
@@ -66,6 +66,31 @@ function isIntLiteral(token: string, min: bigint, max: bigint): boolean {
   return min <= value && value <= max;
 }
 
+export function literalValueToDenseJson(
+  token: string,
+  type: Primitive,
+): DenseJson {
+  switch (type) {
+    case "bool":
+      return token === "true";
+    case "bytes":
+      return unquoteAndUnescape(token).toUpperCase();
+    case "timestamp": {
+      const dateTime = unquoteAndUnescape(token);
+      return new Date(dateTime).valueOf();
+    }
+    case "int32":
+    case "float32":
+    case "float64":
+      return Number(token);
+    case "int64":
+    case "uint64":
+      return String(BigInt(token));
+    case "string":
+      return unquoteAndUnescape(token);
+  }
+}
+
 /**
  * Assuming `token` is a literal value of primitive type, returns a string which
  * uniquely identifies the value within the primitive type. The behavior is
@@ -73,24 +98,6 @@ function isIntLiteral(token: string, min: bigint, max: bigint): boolean {
  * Use this function to check if two literal values are actually equal.
  */
 export function literalValueToIdentity(token: string, type: Primitive): string {
-  switch (type) {
-    case "bool":
-      return token;
-    case "bytes":
-      return unquoteAndUnescape(token).toUpperCase();
-    case "timestamp": {
-      const dateTime = unquoteAndUnescape(token);
-      return String(new Date(dateTime).valueOf());
-    }
-    case "int32":
-    case "float32":
-    case "float64":
-      return String(Number(token));
-    case "int64":
-      return String(BigInt(token));
-    case "uint64":
-      return String(BigInt(token));
-    case "string":
-      return unquoteAndUnescape(token);
-  }
+  const denseJson = literalValueToDenseJson(token, type);
+  return typeof denseJson === "string" ? denseJson : JSON.stringify(denseJson);
 }
