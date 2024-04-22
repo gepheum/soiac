@@ -191,9 +191,9 @@ export interface ArrayType<
 export type UnresolvedArrayType = ArrayType<UnresolvedType>;
 export type MutableArrayType = ArrayType<ResolvedType, true>;
 
-export interface NullableType<Type = ResolvedType> {
-  readonly kind: "nullable";
-  readonly value: Type;
+export interface OptionalType<Type = ResolvedType> {
+  readonly kind: "optional";
+  readonly other: Type;
 }
 
 /**
@@ -204,7 +204,7 @@ export type UnresolvedType =
   | PrimitiveType
   | UnresolvedRecordRef
   | UnresolvedArrayType
-  | NullableType<UnresolvedType>;
+  | OptionalType<UnresolvedType>;
 
 /**
  * Result of recursively resolving the record references in an unresolved type.
@@ -215,7 +215,7 @@ export type ResolvedType<Mutable extends boolean = boolean> =
   | PrimitiveType
   | ResolvedRecordRef
   | ArrayType<ResolvedType, Mutable>
-  | NullableType<ResolvedType<Mutable>>;
+  | OptionalType<ResolvedType<Mutable>>;
 
 export type MutableResolvedType = ResolvedType<true>;
 

@@ -444,7 +444,7 @@ function parseType(it: TokenIterator): UnresolvedType | undefined {
   }
   if (it.peek() === "?") {
     it.next();
-    return { kind: "nullable", value: value };
+    return { kind: "optional", other: value };
   } else {
     return value;
   }

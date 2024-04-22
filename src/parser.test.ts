@@ -283,8 +283,8 @@ describe("module parser", () => {
                 unresolvedType: {
                   kind: "array",
                   item: {
-                    kind: "nullable",
-                    value: {
+                    kind: "optional",
+                    other: {
                       kind: "primitive",
                       primitive: "string",
                     },

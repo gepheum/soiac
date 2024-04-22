@@ -308,8 +308,8 @@ export class ModuleSet {
         this.collectTypeDeps(input.item, out);
         break;
       }
-      case "nullable": {
-        this.collectTypeDeps(input.value, out);
+      case "optional": {
+        this.collectTypeDeps(input.other, out);
         break;
       }
     }
@@ -346,8 +346,8 @@ export class ModuleSet {
     switch (input.kind) {
       case "array":
         return this.referencesImplicitlyNumberedRecord(input.item);
-      case "nullable":
-        return this.referencesImplicitlyNumberedRecord(input.value);
+      case "optional":
+        return this.referencesImplicitlyNumberedRecord(input.other);
       case "primitive":
         return false;
       case "record": {
@@ -439,8 +439,8 @@ export class ModuleSet {
         case "array":
           validate(type);
           return traverseType(type.item);
-        case "nullable":
-          return traverseType(type.value);
+        case "optional":
+          return traverseType(type.other);
       }
     };
 
@@ -453,12 +453,12 @@ export class ModuleSet {
     errors: ErrorSink,
   ): DenseJson | undefined {
     switch (expectedType.kind) {
-      case "nullable": {
+      case "optional": {
         if (value.kind === "literal" && value.token.text === "null") {
           value.type = { kind: "null" };
           return null;
         }
-        return this.valueToDenseJson(value, expectedType.value, errors);
+        return this.valueToDenseJson(value, expectedType.other, errors);
       }
       case "array": {
         if (value.kind !== "array") {
@@ -811,12 +811,12 @@ class TypeResolver {
         }
         return { kind: "array", item: item, key: input.key };
       }
-      case "nullable": {
-        const value = this.resolve(input.value, recordOrigin);
+      case "optional": {
+        const value = this.resolve(input.other, recordOrigin);
         if (!value) {
           return undefined;
         }
-        return { kind: "nullable", value: value };
+        return { kind: "optional", other: value };
       }
       case "record": {
         return this.resolveRecordRef(input, recordOrigin);

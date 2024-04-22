@@ -421,8 +421,8 @@ describe("module set", () => {
                 {
                   name: { text: "user_histories" },
                   type: {
-                    kind: "nullable",
-                    value: {
+                    kind: "optional",
+                    other: {
                       kind: "array",
                       item: {
                         kind: "record",
@@ -1104,8 +1104,8 @@ describe("module set", () => {
             NULL_SHAPE: {
               kind: "constant",
               type: {
-                kind: "nullable",
-                value: {
+                kind: "optional",
+                other: {
                   refToken: {
                     text: "Shape",
                   },
