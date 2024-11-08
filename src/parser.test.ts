@@ -738,6 +738,24 @@ describe("module parser", () => {
     });
   });
 
+  it("enum with field named UNKNOWN", () => {
+    const actualModule = parse(`
+    enum Enum {
+      UNKNOWN = 1;
+    }`);
+
+    expect(actualModule).toMatch({
+      errors: [
+        {
+          token: {
+            text: "UNKNOWN",
+          },
+          message: "Cannot name field of enum: UNKNOWN",
+        },
+      ],
+    });
+  });
+
   it("enum with field number set to zero", () => {
     const actualModule = parse(`
     enum Enum {

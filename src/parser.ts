@@ -379,6 +379,13 @@ function parseField(
       case 2: {
         const expectedCasing = type ? "lower_underscore" : "UPPER_UNDERSCORE";
         casing.validate(name, expectedCasing, it.errors);
+        if (recordType === "enum" && name.text === "UNKNOWN") {
+          it.errors.push({
+            token: name,
+            message: `Cannot name field of enum: UNKNOWN`,
+          });
+          return null;
+        }
         return {
           kind: "field",
           name: name,
