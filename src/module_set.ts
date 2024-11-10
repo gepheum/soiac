@@ -208,16 +208,18 @@ export class ModuleSet {
     }
 
     // Loop 3: once all the types of record fields have been resolved.
-    for (const record of moduleRecords.values()) {
-      /// For every field, determine if the field is recursive, i.e. the field
+    for (const moduleRecord of moduleRecords.values()) {
+      const { record } = moduleRecord;
+      // For every field, determine if the field is recursive, i.e. the field
       // type depends on the record where the field is defined.
       // Store the result in the Field object.
-      this.storeFieldRecursivity(record.record);
+      this.storeFieldRecursivity(record);
+      record.defaultIsRecursive = this.defaultIsRecursive(record);
       // If the record has explicit numbering, register an error if any field
       // has a direct dependency on a record with implicit numbering.
-      this.verifyNumberingConstraint(record.record, errors);
+      this.verifyNumberingConstraint(record, errors);
       // Verify that the `key` field of every array type is valid.
-      for (const field of record.record.fields) {
+      for (const field of record.fields) {
         const { type } = field;
         if (type) {
           this.validateArrayKeys(type, errors);
@@ -278,16 +280,27 @@ export class ModuleSet {
 
   private storeFieldRecursivity(record: MutableRecord) {
     for (const field of record.fields) {
-      if (!field.type) {
-        continue;
-      }
+      if (!field.type) continue;
       const deps = new Set<RecordKey>();
-      this.collectTypeDeps(field.type, deps);
+      this.collectTypeDeps(field.type, "all", deps);
       field.isRecursive = deps.has(record.key);
     }
   }
 
-  private collectTypeDeps(input: ResolvedType, out: Set<RecordKey>): void {
+  private defaultIsRecursive(record: Record) {
+    const deps = new Set<RecordKey>();
+    for (const field of record.fields) {
+      if (!field.type) continue;
+      this.collectTypeDeps(field.type, "default", deps);
+    }
+    return deps.has(record.key);
+  }
+
+  private collectTypeDeps(
+    input: ResolvedType,
+    mode: "all" | "default",
+    out: Set<RecordKey>,
+  ): void {
     switch (input.kind) {
       case "record": {
         const { key } = input;
@@ -299,17 +312,19 @@ export class ModuleSet {
         const record = this.recordMap.get(key)!.record;
         for (const field of record.fields) {
           if (field.type !== undefined) {
-            this.collectTypeDeps(field.type, out);
+            this.collectTypeDeps(field.type, mode, out);
           }
         }
         break;
       }
       case "array": {
-        this.collectTypeDeps(input.item, out);
+        if (mode === "default") break;
+        this.collectTypeDeps(input.item, mode, out);
         break;
       }
       case "optional": {
-        this.collectTypeDeps(input.other, out);
+        if (mode === "default") break;
+        this.collectTypeDeps(input.other, mode, out);
         break;
       }
     }
@@ -324,9 +339,7 @@ export class ModuleSet {
       return;
     }
     for (const field of record.fields) {
-      if (!field.type) {
-        continue;
-      }
+      if (!field.type) continue;
       const invalidRef = this.referencesImplicitlyNumberedRecord(field.type);
       if (invalidRef) {
         errors.push({
@@ -975,9 +988,7 @@ function collectModuleRecords(
     ancestors: readonly Record[],
   ) => {
     for (const record of moduleOrRecord.declarations) {
-      if (record.kind !== "record") {
-        continue;
-      }
+      if (record.kind !== "record") continue;
       const updatedRecordAncestors = ancestors.concat([record]);
       const modulePath = record.name.line.modulePath;
       const recordLocation: MutableRecordLocation = {

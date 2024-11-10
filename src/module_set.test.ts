@@ -157,6 +157,51 @@ describe("module set", () => {
     });
   });
 
+  it("recursivity works", () => {
+    const fakeFileReader = new FakeFileReader();
+    fakeFileReader.pathToCode.set(
+      "path/to/root/path/to/module",
+      `
+        struct A { a: A; }
+        struct B { c: C; }
+        struct C { b: B; }
+        struct D { d: D?; ds: [D]; e: E; }
+        enum E {}
+      `,
+    );
+    const moduleSet = new ModuleSet(fakeFileReader, "path/to/root");
+    const actual = moduleSet.parseAndResolve("path/to/module");
+
+    expect(actual).toMatch({
+      result: {
+        nameToDeclaration: {
+          A: {
+            defaultIsRecursive: true,
+            fields: [{ name: { text: "a" }, isRecursive: true }],
+          },
+          B: {
+            defaultIsRecursive: true,
+          },
+          C: {
+            defaultIsRecursive: true,
+          },
+          D: {
+            defaultIsRecursive: false,
+            fields: [
+              { name: { text: "d" }, isRecursive: true },
+              { name: { text: "ds" }, isRecursive: true },
+              { name: { text: "e" }, isRecursive: false },
+            ],
+          },
+          E: {
+            defaultIsRecursive: false,
+          },
+        },
+      },
+      errors: [],
+    });
+  });
+
   it("circular dependency between modules", () => {
     const fakeFileReader = new FakeFileReader();
     fakeFileReader.pathToCode.set(

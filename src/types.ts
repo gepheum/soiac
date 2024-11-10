@@ -263,7 +263,7 @@ export type Numbering =
   | "broken";
 
 /** Definition of a struct or enum type. */
-export interface Record<Mutable extends boolean = boolean> {
+export interface MutableRecord<Mutable extends boolean = true> {
   readonly kind: "record";
   /** Uniquely identifies the record within the module set. */
   readonly key: RecordKey;
@@ -272,13 +272,26 @@ export interface Record<Mutable extends boolean = boolean> {
   /** Maps a field or nested record name to the corresponding declaration. */
   readonly nameToDeclaration: { [n: string]: RecordLevelDeclaration<Mutable> };
   readonly declarations: ReadonlyArray<RecordLevelDeclaration<Mutable>>;
-  readonly fields: readonly Field<Mutable>[];
-  readonly nestedRecords: readonly Record<Mutable>[];
+  readonly fields: ReadonlyArray<Field<Mutable>>;
+  readonly nestedRecords: ReadonlyArray<Record<Mutable>>;
   readonly numbering: Numbering;
   readonly removedNumbers: readonly number[];
+  /**
+   * Whether the default struct value contains itself.
+   * For example:
+   *   struct A { a: A; }   // defaultIsRecursive: true
+   *   struct B { c: C; }   // defaultIsRecursive: true
+   *   struct C { b: B; }   // defaultIsRecursive: true
+   *   struct D { d: D?; }  // defaultIsRecursive: false
+   *   enum E { ... }       // defaultIsRecursive: false
+   */
+  defaultIsRecursive: boolean;
 }
 
-export type MutableRecord = Record<true>;
+export type Record<Mutable extends boolean = boolean> = //
+  Mutable extends true //
+    ? MutableRecord //
+    : Readonly<MutableRecord<false>>;
 
 export interface Import {
   readonly kind: "import" | "import-as";
