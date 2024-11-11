@@ -310,7 +310,6 @@ class RecordBuilder {
       nestedRecords: nestedRecords,
       numbering: this.numbering,
       removedNumbers: this.removedNumbers.sort(),
-      defaultIsRecursive: false, // Will be populated at a later stage.
     };
   }
 
