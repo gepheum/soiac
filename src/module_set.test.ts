@@ -162,11 +162,15 @@ describe("module set", () => {
     fakeFileReader.pathToCode.set(
       "path/to/root/path/to/module",
       `
-        struct A { a: A; }
-        struct B { c: C; }
-        struct C { b: B; }
-        struct D { d: D?; ds: [D]; e: E; }
-        enum E {}
+        struct A { s: string; }
+        struct B { b: B; }
+        struct C { c: C?; }
+        struct D { d: [D]; }
+        struct E { f: F; }
+        struct F { e: E; }
+        struct G { b: B; }
+        struct H { i: I; }
+        enum I { h: H; }
       `,
     );
     const moduleSet = new ModuleSet(fakeFileReader, "path/to/root");
@@ -176,25 +180,31 @@ describe("module set", () => {
       result: {
         nameToDeclaration: {
           A: {
-            defaultIsRecursive: true,
-            fields: [{ name: { text: "a" }, isRecursive: true }],
+            fields: [{ isRecursive: false }],
           },
           B: {
-            defaultIsRecursive: true,
+            fields: [{ isRecursive: "hard" }],
           },
           C: {
-            defaultIsRecursive: true,
+            fields: [{ isRecursive: "soft" }],
           },
           D: {
-            defaultIsRecursive: false,
-            fields: [
-              { name: { text: "d" }, isRecursive: true },
-              { name: { text: "ds" }, isRecursive: true },
-              { name: { text: "e" }, isRecursive: false },
-            ],
+            fields: [{ isRecursive: "soft" }],
           },
           E: {
-            defaultIsRecursive: false,
+            fields: [{ isRecursive: "hard" }],
+          },
+          F: {
+            fields: [{ isRecursive: "hard" }],
+          },
+          G: {
+            fields: [{ isRecursive: false }],
+          },
+          H: {
+            fields: [{ isRecursive: "soft" }],
+          },
+          I: {
+            fields: [{ isRecursive: "soft" }],
           },
         },
       },

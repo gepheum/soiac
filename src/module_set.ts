@@ -214,7 +214,6 @@ export class ModuleSet {
       // type depends on the record where the field is defined.
       // Store the result in the Field object.
       this.storeFieldRecursivity(record);
-      record.defaultIsRecursive = this.defaultIsRecursive(record);
       // If the record has explicit numbering, register an error if any field
       // has a direct dependency on a record with implicit numbering.
       this.verifyNumberingConstraint(record, errors);
@@ -281,49 +280,47 @@ export class ModuleSet {
   private storeFieldRecursivity(record: MutableRecord) {
     for (const field of record.fields) {
       if (!field.type) continue;
-      const deps = new Set<RecordKey>();
-      this.collectTypeDeps(field.type, "all", deps);
-      field.isRecursive = deps.has(record.key);
+      const modes: ReadonlyArray<"soft" | "hard"> =
+        record.recordType === "struct" ? ["hard", "soft"] : ["soft"];
+      for (const mode of modes) {
+        const deps = new Set<RecordKey>();
+        this.collectTypeDeps(field.type, mode, deps);
+        if (deps.has(record.key)) {
+          field.isRecursive = mode;
+          break;
+        }
+      }
     }
-  }
-
-  private defaultIsRecursive(record: Record) {
-    const deps = new Set<RecordKey>();
-    for (const field of record.fields) {
-      if (!field.type) continue;
-      this.collectTypeDeps(field.type, "default", deps);
-    }
-    return deps.has(record.key);
   }
 
   private collectTypeDeps(
     input: ResolvedType,
-    mode: "all" | "default",
+    mode: "soft" | "hard",
     out: Set<RecordKey>,
   ): void {
     switch (input.kind) {
       case "record": {
         const { key } = input;
-        if (out.has(key)) {
-          return;
-        }
+        if (out.has(key)) return;
         out.add(key);
         // Recursively add deps of all fields of the record.
         const record = this.recordMap.get(key)!.record;
+        if (mode === "hard" && record.recordType === "enum") {
+          return;
+        }
         for (const field of record.fields) {
-          if (field.type !== undefined) {
-            this.collectTypeDeps(field.type, mode, out);
-          }
+          if (field.type === undefined) continue;
+          this.collectTypeDeps(field.type, mode, out);
         }
         break;
       }
       case "array": {
-        if (mode === "default") break;
+        if (mode === "hard") break;
         this.collectTypeDeps(input.item, mode, out);
         break;
       }
       case "optional": {
-        if (mode === "default") break;
+        if (mode === "hard") break;
         this.collectTypeDeps(input.other, mode, out);
         break;
       }

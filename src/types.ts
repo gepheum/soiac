@@ -228,8 +228,23 @@ export interface MutableField<Mutable extends boolean = true> {
   readonly unresolvedType: UnresolvedType | undefined;
   /** May only be undefined if the field is a constant in an enum. */
   type: ResolvedType<Mutable> | undefined;
-  /** True if the value type of the field depends on the field's record. */
-  isRecursive: boolean;
+  /**
+   * Evaluates to true if the value type of the field depends on the record
+   * where the field is defined. If `Struct.DEFAULT.field` is or contains
+   * `Struct.DEFAULT`, then the dependency is "hard", otherwise it is "soft".
+   *
+   * Examples:
+   *   struct A { s: string; }  // false
+   *   struct B { b: B; }       // "hard"
+   *   struct C { c: C?; }      // "soft"
+   *   struct D { d: [D]; }     // "soft"
+   *   struct E { f: F; }       // "hard"
+   *   struct F { e: E; }       // "hard"
+   *   struct G { b: B; }       // false
+   *   struct H { i: I; }       // "soft"
+   *   enum I { h: H; }         // "soft"
+   */
+  isRecursive: false | "soft" | "hard";
 }
 
 /** Field of a struct or enum. */
@@ -263,7 +278,7 @@ export type Numbering =
   | "broken";
 
 /** Definition of a struct or enum type. */
-export interface MutableRecord<Mutable extends boolean = true> {
+export interface Record<Mutable extends boolean = boolean> {
   readonly kind: "record";
   /** Uniquely identifies the record within the module set. */
   readonly key: RecordKey;
@@ -276,22 +291,9 @@ export interface MutableRecord<Mutable extends boolean = true> {
   readonly nestedRecords: ReadonlyArray<Record<Mutable>>;
   readonly numbering: Numbering;
   readonly removedNumbers: readonly number[];
-  /**
-   * Whether the default struct value contains itself.
-   * For example:
-   *   struct A { a: A; }   // defaultIsRecursive: true
-   *   struct B { c: C; }   // defaultIsRecursive: true
-   *   struct C { b: B; }   // defaultIsRecursive: true
-   *   struct D { d: D?; }  // defaultIsRecursive: false
-   *   enum E { ... }       // defaultIsRecursive: false
-   */
-  defaultIsRecursive: boolean;
 }
 
-export type Record<Mutable extends boolean = boolean> = //
-  Mutable extends true //
-    ? MutableRecord //
-    : Readonly<MutableRecord<false>>;
+export type MutableRecord = Record<true>;
 
 export interface Import {
   readonly kind: "import" | "import-as";
