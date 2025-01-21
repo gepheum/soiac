@@ -291,6 +291,17 @@ export interface Record<Mutable extends boolean = boolean> {
   readonly nestedRecords: ReadonlyArray<Record<Mutable>>;
   readonly numbering: Numbering;
   readonly removedNumbers: readonly number[];
+  /**
+   * If the record is a struct, 1 + the maximum field number.
+   * Zero if the record is an enum.
+   */
+  readonly numSlots: number;
+  /**
+   * If the record is a struct, 1 + the maximum of all field numbers and removed
+   * numbers.
+   * Zero if the record is an enum.
+   */
+  readonly numSlotsInclRemovedNumbers: number;
 }
 
 export type MutableRecord = Record<true>;

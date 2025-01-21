@@ -272,10 +272,12 @@ class RecordBuilder {
   }
 
   build(): MutableRecord {
+    const isStruct = this.recordType === "struct";
+
     // If the record is a struct, make sure that all field numbers are
     // consecutive starting from 0. The fields of an enum, on the other hand,
     // can be sparse.
-    if (this.recordType === "struct") {
+    if (isStruct) {
       for (let i = 0; i < this.numbers.size; ++i) {
         if (this.numbers.has(i)) {
           continue;
@@ -299,6 +301,12 @@ class RecordBuilder {
     const { recordName } = this;
     const key = `${recordName.line.modulePath}:${recordName.position}`;
 
+    const numSlots =
+      isStruct && fields.length
+        ? Math.max(...fields.map((f) => f.number)) + 1
+        : 0;
+    const numSlotsInclRemovedNumbers = isStruct ? this.numbers.size : 0;
+
     return {
       kind: "record",
       key: key,
@@ -310,6 +318,8 @@ class RecordBuilder {
       nestedRecords: nestedRecords,
       numbering: this.numbering,
       removedNumbers: this.removedNumbers.sort(),
+      numSlots: numSlots,
+      numSlotsInclRemovedNumbers: numSlotsInclRemovedNumbers,
     };
   }
 
